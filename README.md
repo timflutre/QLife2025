@@ -1,10 +1,18 @@
 ---
 title: "QLife 2025"
+authors: "E. Tourrette, T. Flutre, B. Servin"
 ---
+
+
+<!-- pandoc README.md -t html -s -o README.html --toc -->
 
 
 
 # Genomic prediction for quanti. traits
+
+```
+quarto render genpred.qmd --to html
+```
 
 * goal: show how to answer the question "how to replace pedigree-based kinship with SNP-based kinship?"
 
