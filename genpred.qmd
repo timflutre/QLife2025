@@ -1,0 +1,37 @@
+---
+title: "Genomic prediction for quantitative traits"
+author: "E. Tourrette, T. Flutre, B. Servin"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    toc-location: left
+    number-sections: true
+editor: visual
+---
+
+
+# Main objective
+
+The goal of this session is to show how to answer the question "how to replace pedigree-based kinship with SNP-based kinship?".
+
+
+
+# First goal: understand the genetic determinism of complex traits
+
+```{r}
+2+2
+```
+
+
+# Second goal: predict the breeding values of non-phenotyped individuals
+
+```{r}
+2+2
+```
+
+# Appendix
+
+```{r}
+print(sessionInfo(), locale=FALSE)
+```
