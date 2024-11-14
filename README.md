@@ -52,6 +52,10 @@ On suppose dans cet atelier que les traits ont une archi genet polygeniq infinte
 
 # GWAS for quanti. traits
 
+```
+quarto render gwas.qmd --to html
+```
+
 * goal: show how to answer the question "how to identify QTLs and model their effects?"
 
 Simulations:

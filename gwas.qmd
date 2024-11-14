@@ -1,0 +1,45 @@
+---
+title: "Genom-wide association study for quantitative traits"
+author: "E. Tourrette, T. Flutre, B. Servin"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    toc-location: left
+    number-sections: true
+editor: visual
+---
+
+
+# Main objective
+
+The goal of this session is to show how to answer the question "how to identify QTLs and estimate their effects?".
+
+
+
+# First approach: SNP-by-SNP
+
+```{r}
+2+2
+```
+
+
+# Second approach: joint multi-SNP
+
+```{r}
+2+2
+```
+
+
+# Third approach: multiple responses
+
+```{r}
+2+2
+```
+
+
+# Appendix
+
+```{r}
+print(sessionInfo(), locale=FALSE)
+```
