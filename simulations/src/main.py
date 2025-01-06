@@ -1,4 +1,4 @@
-## beutral burn-in using msprime
+## neutral burn-in using msprime
 ## add selection via simupop
 
 # $ cd ~/Desktop/qlife_2025/simu
@@ -55,7 +55,7 @@ def setGeneticValue(pop, off, dad, mom, param):
 
 #-------------------- parameters
 
-savedFolder = "/home/eliset/Desktop/qlife_2025/20241210_simu"
+savedFolder = "/home/eliset/Desktop/qlife_2025/20250106_0"
 if not os.path.exists(savedFolder):
     os.mkdir(savedFolder)
     os.mkdir(savedFolder + "/freq")
@@ -69,15 +69,14 @@ if not os.path.exists(savedFolder):
 
 
 
-optim = 1
+optim = 5
 varW = 1
 h2 = 0.5
 G = 10
-rep = 2
-recRate = 0
+rep = 1
 N = 100
-L = 1000 ## L = sequence length
-rho = recRate
+L = 10000 ## L = sequence length
+rho = 10/L
 mu = 10/L ## mutation rate
 
 
@@ -85,7 +84,8 @@ mu = 10/L ## mutation rate
 #-------------------- neutral burn-in
 
 ## generate the ancestry of N diploid individuals (i.e. 2N sequences)
-ts = msprime.sim_ancestry(samples = N, sequence_length = L, population_size = 1000, recombination_rate = rho, random_seed = 1234)
+## recombination rate: per-site value
+ts = msprime.sim_ancestry(samples = N, sequence_length = L, population_size = 10000, recombination_rate = rho, random_seed = 1234)
 
 ## add (neutral) mutations to a tree sequence
 mut_model = msprime.BinaryMutationModel() ## binary model to only have biallelic variants (0 or 1, 0 being the ancestral allele)
@@ -102,7 +102,7 @@ pos = [var.site.position for var in mts.variants()]
 
 ## save the variants in a VCF file
 with open(savedFolder + "/vcf/vcf" + str(rep) + ".txt", "w") as vcf_file:
-    mts.write_vcf(vcf_file)
+    mts.write_vcf(vcf_file, allow_position_zero = True)
 
 ## export the genotype matrix as a numpy array
 tmp = mts.genotype_matrix()
@@ -125,7 +125,7 @@ for ind in range(N):
 
 ## consider that all the variants can be QTLs
 ## with a given distribution of effect (normal distribution?)
-beta = list(norm.rvs(size = Lp, loc = 0, scale = np.sqrt(0.01)))
+beta = list(norm.rvs(size = Lp, loc = 0, scale = np.sqrt(0.001)))
 ## ideally, the betas would be saved in the vcf, to get all the information about the variants at the same place
 with open(savedFolder + "/beta/beta" + str(rep) + ".txt", "w") as out:
     for i in beta:
@@ -178,16 +178,20 @@ pop.evolve(
         sim.InitLineage(mode = sim.FROM_INFO_SIGNED), ## save the lineage of each allele
         sim.InitSex(),
         sim.PedigreeTagger(outputFields = ['gen', 'phenotype', 'breedingValue'], output='>>' + savedFolder + '/pedigree/pedigree' + str(rep) + '.txt'), ## will need the first generation for the randomization
-        sim.Stat(alleleFreq = sim.ALL_AVAIL, popSize = True, meanOfInfo = ['avgFitness', 'breedingValue', 'phenotype'], varOfInfo = ['avgFitness', 'breedingValue', 'phenotype']),
+        sim.Stat(alleleFreq = sim.ALL_AVAIL, popSize = True),
         sim.PyEval(r"'-1\t%d\t' % subPopSize[0]", step = 1, output = '>>' + savedFolder + '/freq/freq' + str(rep) + ".txt"),
         sim.PyEval(r"'\t'.join(['%.4f' % alleleFreq[x][1] for x in range(len(alleleFreq))]) + '\n'", step = 1, output = '>>' + savedFolder + '/freq/freq' + str(rep) + ".txt"),
         sim.PyEval(r"'-1\t%d\t' % subPopSize[0]", step = 1, output = '>>' + savedFolder + '/count/count' + str(rep) + ".txt"),
         sim.PyEval(r"'\t'.join(['%.4f' % alleleNum[x][1] for x in range(len(alleleNum))]) + '\n'", step = 1, output = '>>' + savedFolder + '/count/count' + str(rep) + ".txt"),
-        sim.PyEval(r"'-1\t'", step = 1, output = '>>' + savedFolder + '/fit/fit' + str(rep) + ".txt"),
-        sim.PyEval(r"'\t'.join(['%.4f' % x for x in fitness]) + '\n'", stmts = "fitness = pop.indInfo('avgFitness')", exposePop = 'pop', step = 1, output = '>>' + savedFolder + '/fit/fit' + str(rep) + ".txt"),
     ],
     preOps = [
         sim.PySelector(func = selModel.fitness),
+        ## save the fitness of the parents (offsprings of the generation t - 1)
+        ## need to do it now, after having evaluated their fitness via PySelector
+        ## if were to do it in postOps with avgFitness: evaluate the average fitness of the PARENTS (not what we want!!!)
+        ## for the last generation (offspring), apply the selector outside of pop.evolve to get their fitness
+        sim.PyEval(r"'%d\t' %gen", step = 1, output = '>>' + savedFolder + '/fit/fit' + str(rep) + ".txt"),
+        sim.PyEval(r"'\t'.join(['%.4f' % x for x in fitness]) + '\n'", stmts = "fitness = pop.indInfo('fitness')", exposePop = 'pop', step = 1, output = '>>' + savedFolder + '/fit/fit' + str(rep) + ".txt"),
     ],
     matingScheme = sim.HomoMating(
         chooser = sim.RandomParentsChooser(True, selectionField = 'fitness'),
@@ -195,27 +199,33 @@ pop.evolve(
             [
                 sim.IdTagger(),
                 sim.PyTagger(setGen), ## set the generation of the new ind to that of its father (that was incremented by 1 in the preOps step)
-                sim.Recombinator(rates = recRate), 
+                sim.Recombinator(rates = rho), 
                 sim.PyOperator(setGeneticValue, param = [varE, beta]), 
                 sim.SummaryTagger(mode = sim.MEAN, infoFields = ['fitness', 'avgFitness']),  
                 sim.PedigreeTagger(outputFields = ['gen', 'phenotype', 'breedingValue'], output='>>' + savedFolder + '/pedigree/pedigree' + str(rep) + '.txt'),
             ]),
     ),
     postOps = [
-        sim.Stat(alleleFreq = sim.ALL_AVAIL, popSize = True, meanOfInfo = ['avgFitness', 'breedingValue', 'phenotype'], varOfInfo = ['avgFitness', 'breedingValue', 'phenotype']),
+        sim.Stat(alleleFreq = sim.ALL_AVAIL, popSize = True),
         sim.PyEval(r"'%d\t%d\t' % (gen,subPopSize[0])", step = 1, output = '>>' + savedFolder + '/freq/freq' + str(rep) + ".txt"),
         sim.PyEval(r"'\t'.join(['%.4f' % alleleFreq[x][1] for x in range(len(alleleFreq))]) + '\n'", step = 1, output = '>>' + savedFolder + '/freq/freq' + str(rep) + ".txt"),
         sim.PyEval(r"'%d\t%d\t' % (gen,subPopSize[0])", step = 1, output = '>>' + savedFolder + '/count/count' + str(rep) + ".txt"),
         sim.PyEval(r"'\t'.join(['%.4f' % alleleNum[x][1] for x in range(len(alleleNum))]) + '\n'", step = 1, output = '>>' + savedFolder + '/count/count' + str(rep) + ".txt"),
-        ## attention: need to save it beforehand for the founders
-        sim.PyEval(r"'%d\t' %gen", step = 1, output = '>>' + savedFolder + '/fit/fit' + str(rep) + ".txt"),
-        sim.PyEval(r"'\t'.join(['%.4f' % x for x in fitness]) + '\n'", stmts = "fitness = pop.indInfo('avgFitness')", exposePop = 'pop', step = 1, output = '>>' + savedFolder + '/fit/fit' + str(rep) + ".txt"),
         ## the additive variance decrease at each generation due to the selection
         ## as a function of the population size
         sim.PyExec("varA = varA*(1 - 0.5/N)"), 
     ],
-    gen = G
+    gen = 10
 )
+
+## apply the selector to the offsprings of the last generation to get their fitness
+lastFit = []
+for ind in pop.individuals():
+    lastFit.append(selModel.fitness(ind.phenotype))
+
+with open(savedFolder + '/fit/fit' + str(rep) + '.txt', 'a') as f:
+    f.write(str(G+1) + '\t')
+    f.write('\t'.join(['%.4f' % x for x in lastFit]) + '\n')
 
 ## dump the whole population (all generations) in a file
 ## genotypes included, as well as the pedigree informations

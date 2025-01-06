@@ -18,6 +18,21 @@ setwd("~/Desktop/qlife_2025/20241210_simu/genotype")
 
 data <- read.table("origins_2.txt")
 
+#########################################"
+############################################"""""
+## read the genotypes files
+
+setwd("/home/eliset/Desktop/qlife_2025/20250106_0/genotype")
+data <- read.table("genotype_1.txt", fill = TRUE)
+
+data <- data[data$V2 %in% c("FU", "MU"),]
+colnames(data) <- c("ix", "sex", "hap1", "sep1", "hap2", "sep2", "id", "sire", "dam", "gen", "pheno", "bv", "fit", "avgFit")
+
+plot(data$gen, data$bv)
+
+setwd("/home/eliset/Desktop/qlife_2025/20250106_0/pedigree")
+data <- read.table("pedigree1.txt")
+d2 <- aggregate(data[c("V7", "V8")], by = list(g = data$V6), mean)
 
 
 #########################################"
