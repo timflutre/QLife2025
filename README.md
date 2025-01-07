@@ -78,7 +78,7 @@ Simulations:
 
 2. multi-SNP GWAS:
 
-    * single-SNP (en fixe) vs rrBLUP (en aléatoire)
+    * single-SNP (en fixe, R/BGLR) vs ridge reg (en aléatoire, R/rrBLUP)
     
     * modéliser la distrib des effets des SNP :
     
