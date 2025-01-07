@@ -60,7 +60,7 @@ quarto render gwas.qmd --to html
 
 Simulations:
 
-* as above, but some SNPs have no effect
+* some SNPs have no effect, no selection
 
 1. SNP-by-SNP GWAS:
 
