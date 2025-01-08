@@ -7,6 +7,8 @@
 
 #-------------------- import packages
 
+
+
 from simuOpt import setOptions
 setOptions(alleleType = 'lineage', quiet=True)
 
@@ -15,6 +17,10 @@ import simuPOP as sim
 import numpy as np
 from scipy.stats import norm
 import os
+import sys
+
+from simuPOP.utils import export
+from simuPOP.utils import Exporter
 
 #-------------------- functions
 
@@ -55,87 +61,81 @@ def setGeneticValue(pop, off, dad, mom, param):
 
 #-------------------- parameters
 
-savedFolder = "/home/eliset/Desktop/qlife_2025/20250106_0"
-if not os.path.exists(savedFolder):
-    os.mkdir(savedFolder)
-    os.mkdir(savedFolder + "/freq")
-    os.mkdir(savedFolder + "/count")
-    os.mkdir(savedFolder + "/pedigree")
-    os.mkdir(savedFolder + "/genotype")
-    os.mkdir(savedFolder + "/fit")
-    os.mkdir(savedFolder + "/vcf")
-    os.mkdir(savedFolder + "/beta")
-
-
-
-
 optim = 5
 varW = 1
 h2 = 0.5
 G = 10
 rep = 1
 N = 100
-L = 10000 ## L = sequence length
-rho = 10/L
-mu = 10/L ## mutation rate
+Npop = 10000
 
+nChr = 5 ## the chromosomes are independant
+Lchr = 200 ## L = sequence length (number of sites), per chromosome // consider that all chromosomes have the same number of sites
+## if want free recombination, there will be one QTL per chromosome and Lchr = 1
+rho = 1/Lchr 
+mu = 10/Lchr ## mutation rate
+
+if h2 <= 0:
+    sys.exit('Null heritability is not allowed')
+
+
+savedFolder = "/home/eliset/Desktop/qlife_2025/20250106_0_rep" + str(rep)
+if not os.path.exists(savedFolder):
+    os.mkdir(savedFolder)
 
 
 #-------------------- neutral burn-in
 
 ## generate the ancestry of N diploid individuals (i.e. 2N sequences)
 ## recombination rate: per-site value
-ts = msprime.sim_ancestry(samples = N, sequence_length = L, population_size = 10000, recombination_rate = rho, random_seed = 1234)
+## each chromosomes are independant -> one replicate = one chromosome
+ts = msprime.sim_ancestry(samples = N, sequence_length = Lchr, population_size = Npop, recombination_rate = rho, random_seed = 1234, num_replicates = nChr)
 
 ## add (neutral) mutations to a tree sequence
 mut_model = msprime.BinaryMutationModel() ## binary model to only have biallelic variants (0 or 1, 0 being the ancestral allele)
-mts = msprime.sim_mutations(ts, rate = mu, random_seed = 5678, model = mut_model)
+genoList = np.empty(shape = 0)
+for i, tchr in enumerate(ts):
+    mts = msprime.sim_mutations(tchr, rate = mu, random_seed = 5678, model = mut_model)
+    genoList = np.append(genoList, mts.genotype_matrix()) ## export the genotype matrix as a numpy array
+    ## mts.genotype_matrix() format: [chr1, ..., nChr]
+    ## with chr = array([variant1, ..., variant Lchr])
+    ## with variant = [ind1 homologous1, ind1 hom2, ..., indN hom1, indN hom2]
+    ## => genoList format = [chr1 loc1 ind1 hom1, chr1 loc1 ind1 hom2, chr1 loc1 ind2, chr1 loc2, chr2 ...]
+    # print([var.genotypes.tolist() for var in mts.variants()])
 
-## print the variants
-#for var in mts.variants():
-#    print(var.site.position, var.alleles, var.genotypes, sep="\t")
-
-## save the position in a list
-pos = [var.site.position for var in mts.variants()]
-## can then use it if we want to take into account the level of recombination between two variants based on the fact that their distance (in bp) will be different
-
-
-## save the variants in a VCF file
-with open(savedFolder + "/vcf/vcf" + str(rep) + ".txt", "w") as vcf_file:
-    mts.write_vcf(vcf_file, allow_position_zero = True)
-
-## export the genotype matrix as a numpy array
-tmp = mts.genotype_matrix()
-## format: tmp = [variant1, ..., variantLp]
-## with variant = [ind1 chr1, ind1, chr2, ..., indN chr1, indN chr2]
-
-Lp = tmp.shape[0]
 
 ## want the genotype matrix in this format:
 ## founders = [ind1, ..., indN]
-## with ind = [variant1 chr1, ..., variantLp chr1, variant1 chr1, ..., variantLp chr2]
+## with ind = [variant1 hom1, ..., variantL hom1, variant1 hom2, ..., variantL hom2]
+L = nChr * Lchr
 founders = [[] for i in range(N)]
 for ind in range(N):
-    founders[ind] = [[] for i in range(2*Lp)]
-    for locus in range(Lp):
-        founders[ind][2*locus:(2*locus+2)] = tmp[locus][2*ind:(2*ind+2)]
+    founders[ind] = [[] for i in range(2*L)]
+    ix1 = list(range(ind*2, 2*L*N, 2*N)) ## index of the variants in genoList for the first homologous chromosome
+    ix2 = list(range(ind*2+1, 2*L*N, 2*N)) ## index of the variants in genoList for the second homologous chromosome
+    for loc in range(L):
+        founders[ind][loc] = genoList[ix1[loc]]
+        founders[ind][loc+L] = genoList[ix2[loc]] ## allele on the homologous chromosome (diploids)
 
 
 #-------------------- forward-in-time simulations, with selection
 
 ## consider that all the variants can be QTLs
 ## with a given distribution of effect (normal distribution?)
-beta = list(norm.rvs(size = Lp, loc = 0, scale = np.sqrt(0.001)))
-## ideally, the betas would be saved in the vcf, to get all the information about the variants at the same place
-with open(savedFolder + "/beta/beta" + str(rep) + ".txt", "w") as out:
+beta = list(norm.rvs(size = L, loc = 0, scale = np.sqrt(0.001)))
+with open(savedFolder + "/beta.txt", "w") as out:
     for i in beta:
         out.write(str(i) + "\n")
+
+## for now the betas are drawn from a normal distribution, but will also need to include:
+## - a given proportion are neutral with the others being major effects
+## - multi-trait: correlation between effects; effects dranwn from a multi-normal distribution
 
 ## initialize the population
 ## with the same population size as the one defined by msprime
 ## and use the number of variants for the number of loci
 ## could also add the monomorphic loci, but they wouldn't add any information...
-pop = sim.Population(size = N, loci = Lp, ancGen = -1, infoFields = ['ind_id', 'father_id', 'mother_id', 'gen', 'phenotype', 'breedingValue', 'fitness', 'avgFitness'])
+pop = sim.Population(size = N, loci = [Lchr]*nChr, ancGen = -1, infoFields = ['ind_id', 'father_id', 'mother_id', 'gen', 'phenotype', 'breedingValue', 'fitness', 'avgFitness'])
 sim.IdTagger().reset(1) ## just to make sure IDs starts from 1
 sim.tagID(pop)
 pop.setIndInfo(0, 'gen')
@@ -171,18 +171,16 @@ sim.initInfo(pop, phenotype, infoFields = 'phenotype')
 pop.dvars().varA = varA
 pop.dvars().N = N
 
+# sim.dump(pop, ancGens = sim.ALL_AVAIL, output = ">>" + savedFolder + "/initialPop.txt")
 
 ## evolution of the population
 pop.evolve(
     initOps = [
         sim.InitLineage(mode = sim.FROM_INFO_SIGNED), ## save the lineage of each allele
         sim.InitSex(),
-        sim.PedigreeTagger(outputFields = ['gen', 'phenotype', 'breedingValue'], output='>>' + savedFolder + '/pedigree/pedigree' + str(rep) + '.txt'), ## will need the first generation for the randomization
+        sim.PedigreeTagger(outputFields = ['gen', 'phenotype', 'breedingValue'], output='>>' + savedFolder + '/pedigree.txt'), ## will need the first generation for the randomization
         sim.Stat(alleleFreq = sim.ALL_AVAIL, popSize = True),
-        sim.PyEval(r"'-1\t%d\t' % subPopSize[0]", step = 1, output = '>>' + savedFolder + '/freq/freq' + str(rep) + ".txt"),
-        sim.PyEval(r"'\t'.join(['%.4f' % alleleFreq[x][1] for x in range(len(alleleFreq))]) + '\n'", step = 1, output = '>>' + savedFolder + '/freq/freq' + str(rep) + ".txt"),
-        sim.PyEval(r"'-1\t%d\t' % subPopSize[0]", step = 1, output = '>>' + savedFolder + '/count/count' + str(rep) + ".txt"),
-        sim.PyEval(r"'\t'.join(['%.4f' % alleleNum[x][1] for x in range(len(alleleNum))]) + '\n'", step = 1, output = '>>' + savedFolder + '/count/count' + str(rep) + ".txt"),
+        Exporter(format = "csv", output = '>>' + savedFolder + '/genotype.txt', infoFields = ["ind_id"], header = False, genoFormatter = {(0,0):0, (0,1):1, (1,0):1, (1,1):2}, sexFormatter = None, affectionFormatter = None, delimiter = "\t"),
     ],
     preOps = [
         sim.PySelector(func = selModel.fitness),
@@ -190,8 +188,8 @@ pop.evolve(
         ## need to do it now, after having evaluated their fitness via PySelector
         ## if were to do it in postOps with avgFitness: evaluate the average fitness of the PARENTS (not what we want!!!)
         ## for the last generation (offspring), apply the selector outside of pop.evolve to get their fitness
-        sim.PyEval(r"'%d\t' %gen", step = 1, output = '>>' + savedFolder + '/fit/fit' + str(rep) + ".txt"),
-        sim.PyEval(r"'\t'.join(['%.4f' % x for x in fitness]) + '\n'", stmts = "fitness = pop.indInfo('fitness')", exposePop = 'pop', step = 1, output = '>>' + savedFolder + '/fit/fit' + str(rep) + ".txt"),
+        #sim.PyEval(r"'%d\t' %gen", step = 1, output = '>>' + savedFolder + '/fit/fit' + str(rep) + ".txt"),
+        #sim.PyEval(r"'\t'.join(['%.4f' % x for x in fitness]) + '\n'", stmts = "fitness = pop.indInfo('fitness')", exposePop = 'pop', step = 1, output = '>>' + savedFolder + '/fit/fit' + str(rep) + ".txt"),
     ],
     matingScheme = sim.HomoMating(
         chooser = sim.RandomParentsChooser(True, selectionField = 'fitness'),
@@ -202,46 +200,43 @@ pop.evolve(
                 sim.Recombinator(rates = rho), 
                 sim.PyOperator(setGeneticValue, param = [varE, beta]), 
                 sim.SummaryTagger(mode = sim.MEAN, infoFields = ['fitness', 'avgFitness']),  
-                sim.PedigreeTagger(outputFields = ['gen', 'phenotype', 'breedingValue'], output='>>' + savedFolder + '/pedigree/pedigree' + str(rep) + '.txt'),
+                sim.PedigreeTagger(outputFields = ['gen', 'phenotype', 'breedingValue'], output='>>' + savedFolder + '/pedigree.txt'),
             ]),
     ),
     postOps = [
         sim.Stat(alleleFreq = sim.ALL_AVAIL, popSize = True),
-        sim.PyEval(r"'%d\t%d\t' % (gen,subPopSize[0])", step = 1, output = '>>' + savedFolder + '/freq/freq' + str(rep) + ".txt"),
-        sim.PyEval(r"'\t'.join(['%.4f' % alleleFreq[x][1] for x in range(len(alleleFreq))]) + '\n'", step = 1, output = '>>' + savedFolder + '/freq/freq' + str(rep) + ".txt"),
-        sim.PyEval(r"'%d\t%d\t' % (gen,subPopSize[0])", step = 1, output = '>>' + savedFolder + '/count/count' + str(rep) + ".txt"),
-        sim.PyEval(r"'\t'.join(['%.4f' % alleleNum[x][1] for x in range(len(alleleNum))]) + '\n'", step = 1, output = '>>' + savedFolder + '/count/count' + str(rep) + ".txt"),
         ## the additive variance decrease at each generation due to the selection
         ## as a function of the population size
         sim.PyExec("varA = varA*(1 - 0.5/N)"), 
+        Exporter(format = "csv", output = '>>' + savedFolder + '/genotype.txt', infoFields = ["ind_id"], header = False, genoFormatter = {(0,0):0, (0,1):1, (1,0):1, (1,1):2}, sexFormatter = None, affectionFormatter = None, delimiter = "\t"),
     ],
     gen = 10
 )
 
-## apply the selector to the offsprings of the last generation to get their fitness
-lastFit = []
-for ind in pop.individuals():
-    lastFit.append(selModel.fitness(ind.phenotype))
 
-with open(savedFolder + '/fit/fit' + str(rep) + '.txt', 'a') as f:
-    f.write(str(G+1) + '\t')
-    f.write('\t'.join(['%.4f' % x for x in lastFit]) + '\n')
+
+## apply the selector to the offsprings of the last generation to get their fitness
+#lastFit = []
+#for ind in pop.individuals():
+#    lastFit.append(selModel.fitness(ind.phenotype))
+#with open(savedFolder + '/fit/fit' + str(rep) + '.txt', 'a') as f:
+#    f.write(str(G+1) + '\t')
+#    f.write('\t'.join(['%.4f' % x for x in lastFit]) + '\n')
 
 ## dump the whole population (all generations) in a file
 ## genotypes included, as well as the pedigree informations
 ## for now do that, but will want to save the genotypes only in a specific file
-sim.dump(pop, structure = False, ancGens = sim.ALL_AVAIL, output = ">>" + savedFolder + "/genotype/genotype_" + str(rep) + ".txt")
+# sim.dump(pop, ancGens = sim.ALL_AVAIL, output = ">>" + savedFolder + "/genotype.txt")
 
 ## save the origins (for the lineage tracing)
 for ind in pop.individuals():
     lineage = ind.lineage()
     N = len(lineage) // 2
-    with open(savedFolder + '/genotype/origins_' + str(rep) + '.txt', 'a') as f:
+    with open(savedFolder + '/IBD.txt', 'a') as f:
         towrite = lineage[:N]
-        f.write(str(ind.ind_id) + '\t1\t' + '\t'.join(['%d' % x for x in towrite]) + '\n')
+        f.write(str(ind.ind_id) + '\thom1\t' + '\t'.join(['%d' % x for x in towrite]) + '\n')
         towrite = lineage[N:]
-        f.write(str(ind.ind_id) + '\t2\t' + '\t'.join(['%d' % x for x in towrite]) + '\n')
-
+        f.write(str(ind.ind_id) + '\thom2\t' + '\t'.join(['%d' % x for x in towrite]) + '\n')
 
 
 
