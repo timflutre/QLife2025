@@ -93,9 +93,9 @@ if __name__ == '__main__':
     from simuPOP.utils import export
     from simuPOP.utils import Exporter
 
-    default = {'savedFolder' : "~/default",
-               'optim' : 5,
-               'varW' : 1,
+    default = {'savedFolder' : "/home/eliset/Desktop/qlife_2025/default",
+               'optim' : 0,
+               'varW' : 100,
                'h2': 0.5,
                'G' : 10,
                'N' : 100,
