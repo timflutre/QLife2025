@@ -38,11 +38,15 @@ suppressPackageStartupMessages(library(rrBLUP))
 
 # Main objective
 
-The goal of this session is to show how to answer the question "how to replace pedigree-based kinship with SNP-based kinship?".
+In the goal of understanding the genetic determinism of complex traits, this session will show how to answer the question "how to replace pedigree-based kinship with SNP-based kinship?".
 
 
 
 # Run the simulation
+
+In this tutorial, we will play with two simulate data sets.
+
+TODO: describe them
 
 ```{r}
 ## TODO
@@ -95,7 +99,34 @@ IBDs[1:3, 1:6]
 
 
 
-# First goal: understand the genetic determinism of complex traits
+# First part: estimate the (additive) genetic variance
+
+In this part we are interested in decomposing the overall phenotypic variance in several components, notably the genetic variance and, more specifically, the additive genetic variance.
+How can it be estimated, and which improvements do markers provide?
+This part is heavily inspired by [Toro et al (2011)](http://www.gsejournal.org/content/43/1/27), [Legarra (2016)](http://dx.doi.org/10.1016/j.tpb.2015.08.005) and [Schreck et al (2019)](https://academic.oup.com/genetics/article/213/2/379/5930631).
+
+Let us start with a population of $n$ individuals called the "reference population" (we will see later what such a population can be).
+Each individual in this population has a genetic value, and the genetic variance is the variance of the genetic values of these individuals.
+If each individual can be cloned and phenotyped many times, its total genetic value can be estimated.
+Otherwise, if all individuals are mated at random many times, and their offsprings phenotyped, their breeding values can be estimated.
+We will focus here on additive genetic values, which correspond to breeding values after ignoring the contribution of additive-additive epistasis.
+
+Two individuals are considered genetically identical for a given trait, i.e., have the same genetic value, if they have the same genotypes at the QTLs for that trait, i.e., the same allele pairs at the causal genes.
+Moreover, if individual $i$ is more related to individual $j$ than to individual $k$, we expect $i$ and $j$ to have inherited more alleles in common at the QTLs than $i$ and $k$, and hence to be more likely to have more similar phenotypes than $i$ and $k$.
+More formally, each individual has a genetic value, $u_i$, all gathered into the vector $\boldsymbol{u}$, and the relationships between individuals are seen as standardized covariances, such that $Cov(u_i,u_j) = \sigma_u^2 K_{ij}$ where $\sigma_u^2$ is the genetic variance and all $K_{ij}$ are gathered into a matrix $K$ known as the genetic relationship matrix.
+
+Genetic relationships are due to identical-by-state alleles at causal genes.
+As these genes are usually unknown (at least here), proxies will be used, such as pedigree and marker relationships.
+
+TODO: explain really what $\sigma_u^2$ is, as trace of cov(ui,uj) (see Schreck et al 2019)
+
+## True IBD relationships
+
+TODO
+
+```{r}
+
+```
 
 ## Expected IBD relationships from the pedigree
 
@@ -115,7 +146,7 @@ if(FALSE){
 }
 ```
 
-Estimate the expected IBD:
+Estimate the expected IBD, the `kinship` function using a recursive algorithm described in Lange (1997):
 ```{r}
 A <- 2 * kinship(ped)
 dim(A)
@@ -129,6 +160,8 @@ hist(A[upper.tri(A)])
 ```
 
 ## Realized relationships assuming HWE and no DL
+
+### First estimator from VanRaden (2008)
 
 VanRaden P. 2008. Efficient methods to compute genomic predictions. Journal of Dairy Science. 91(11):4414–4423. doi:10.3168/jds.2007-0980.
 
@@ -146,30 +179,41 @@ hist(diag(GRM_vr))
 hist(GRM_vr[upper.tri(GRM_vr)])
 ```
 
-## True IBD relationships
+### Second estimator from VanRaden (2008)
+
+VanRaden P. 2008. Efficient methods to compute genomic predictions. Journal of Dairy Science. 91(11):4414–4423. doi:10.3168/jds.2007-0980.
 
 ```{r}
-
+## TODO
 ```
 
-## Astle-Balding
-
-Astle W, Balding D. 2009. Population structure and cryptic relatedness in genetic association studies. Statistical Science. 24(4):451–471. doi:10.1214/09-sts307.
-
-## Yang
+### Estimator from Yang et al (2010)
 
 Yang J, Benyamin B, McEvoy B, Gordon S, Henders A, Nyholt D, Madden P, Heath A, Martin N, Montgomery G, et al. 2010. Common SNPs explain a large proportion of the heritability for human height. Nature genetics. 42(7):565–569. doi:10.1038/ng.608.
 
-## LDAK
+Similar to the 2nd estimator from Van Raden (2008).
+
+## Estimator from Astle-Balding
+
+Astle W, Balding D. 2009. Population structure and cryptic relatedness in genetic association studies. Statistical Science. 24(4):451–471. doi:10.1214/09-sts307.
+
+## LDAK estimator
 
 Speed D, Balding D. 2014. MultiBLUP: improved SNP-based prediction for complex traits. Genome Research. 24(9):1550–1557. doi:10.1101/gr.169375.113.
 
 Speed D, Hemani G, Johnson M, Balding D. 2012. Improved heritability estimation from genome-wide SNPs. American journal of human genetics. 91(6):1011–1021. doi:10.1016/j.ajhg.2012.10.010.
 
 ```{r}
-
+## TODO
 ```
 
+## Estimator from Schreck et al
+
+Schreck N, Piepho H-P, Schlather M. 2019. Best Prediction of the Additive Genomic Variance in Random-Effects Models. Genetics. 213(2):379–394. doi:10.1534/genetics.119.302324.
+
+```{r}
+## TODO
+```
 
 ## Compare additive relationships
 
@@ -192,7 +236,7 @@ plot(pedDat$breeding_value, pedDat$phenotype)
 
 <!-- ==================================================================== -->
 
-# Second goal: predict the breeding values of non-phenotyped individuals
+# Second part: predict the breeding values of non-phenotyped individuals
 
 ```{r}
 
