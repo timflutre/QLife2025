@@ -97,9 +97,19 @@ str(IBDs, list.len=6)
 IBDs[1:3, 1:6]
 ```
 
+## SNP effects
+
+```{r}
+inF <- file.path(projectDir, "simulations", "example_data", "beta.txt")
+stopifnot(file.exists(inF))
+betas <- read.table(inF, header=FALSE, sep="\t")
+str(betas)
+head(betas)
+```
 
 
-# First part: estimate the (additive) genetic variance
+
+# First part: estimate the (additive) genetic (co)variances
 
 In this part we are interested in decomposing the overall phenotypic variance in several components, notably the genetic variance and, more specifically, the additive genetic variance.
 How can it be estimated, and which improvements do markers provide?
@@ -164,6 +174,8 @@ hist(A[upper.tri(A)])
 ### First estimator from VanRaden (2008)
 
 VanRaden P. 2008. Efficient methods to compute genomic predictions. Journal of Dairy Science. 91(11):4414–4423. doi:10.3168/jds.2007-0980.
+
+TODO: compute on generation 0 and on the whole pop
 
 ```{r}
 tmp <- matrix(rep(1, nrow(genos))) %*% (2 * AFs)
@@ -237,6 +249,8 @@ plot(pedDat$breeding_value, pedDat$phenotype)
 <!-- ==================================================================== -->
 
 # Second part: predict the breeding values of non-phenotyped individuals
+
+TODO: compare estimates of SNP effects ($\hat{\beta}$) with true effects
 
 ```{r}
 
