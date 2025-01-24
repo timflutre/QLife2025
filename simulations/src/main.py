@@ -75,10 +75,21 @@ def saveLineage(pop, param):
             f.write(str(ind.ind_id) + '\thom2\t' + '\t'.join(['%d' % x for x in towrite]) + '\n')
     return True
 
+
+## function to test the value of the parameters inputed
+## if they do not correspond, then exit the simulation
+def testParameters(h2, h2_others, nTrait):
+    if h2 <= 0:
+        sys.exit('Null heritability is not allowed')
+    if len(h2_others) != (nTrait-1):
+        sys.exit('Not enough heritabilities defined: each trait need to have a h2')
+    return True
+
+
 #-------------------- parameters
 
 if __name__ == '__main__':
-    
+
     from simuOpt import setOptions
     setOptions(alleleType = 'lineage', quiet=True)
 
@@ -89,25 +100,35 @@ if __name__ == '__main__':
     from scipy.stats import multivariate_normal
     import os
     import sys
+    import random
 
     from simuPOP.utils import export
     from simuPOP.utils import Exporter
 
-    default = {'savedFolder' : "/home/eliset/Desktop/qlife_2025/default",
-               'optim' : 0,
-               'varW' : 100,
-               'h2': 0.5,
+    default = {'savedFolder' : "/home/eliset/Desktop/qlife_2025/test/default",
+               'optim' : 5,
+               'varW' : 10,
+               'h2': [0.5, 0.9], ## can have multiple values if more than one trait; it's the first trait that will be selected for
                'G' : 10,
                'N' : 100,
                'Npop' : 10000,
-               'nTrait' : 1,
-               'nChr' : 1,
-               'Lchr' : 1000,
-               'rho' : 10e-8}
+               'nTrait' : 2,
+               'nChr' : 1000,
+               'Lchr' : 1,
+               'rho' : 0,
+               'proportionQTL' : 0.5,
+               'varEffect' : 1, ## variance of the distribution of QTL effects (suppose it's the same for all traits if multiple ones)
+               'corTrait': 0.5} ## correlation between the QTLs effects of the different traits; consider full pleiotropy
+
+    ## rmk: the variance and covariance for the QTL effect is BEFORE the normalization by the phenotypic variance!!
 
     parameters = getopts(sys.argv, default)
-
-    SEED = sim.getRNG().seed()
+    
+    
+    ## set the seed for simupop and numpy random generator
+    SEED = random.randint(0, 2 ** 32)
+    random.seed(SEED)
+    sim.setRNG(seed = SEED)
 
     savedFolder = parameters['savedFolder']
     rep = 1
@@ -119,19 +140,35 @@ if __name__ == '__main__':
     N = int(parameters['N'])
     Npop = int(parameters['Npop'])
 
-    h2 = float(parameters['h2'])
+    ## test if h2 is a list
+    ## if not, transform it in a list
+    if not isinstance(parameters['h2'], list):
+        parameters['h2'] = [parameters['h2']]
+
+    h2 = float(parameters['h2'][0])
+    h2_others = [float(i) for i in parameters['h2'][1:]] ## heritabilities of the other traits; if nTrait = 1, then it will be empty
     nTrait = int(parameters['nTrait'])
     nChr = int(parameters['nChr']) ## the chromosomes are independant
     Lchr = int(parameters['Lchr']) ## Lchr = sequence length (number of sites), per chromosome // consider that all chromosomes have the same number of sites
+    propQTL = float(parameters['proportionQTL']) ## proportion of QTLs among the markers
     rho = float(parameters['rho']) ## if want free recombination, there will be one QTL per chromosome and Lchr = 1
-    mu = 10/Lchr
-
-    varEffect = 1
+    
+    mu = 0.1/Lchr
+    if Lchr == 1:
+        mu = 0.01
+    
+    
+    varEffect = float(parameters['varEffect'])
     if nTrait > 1:
-        covTrait = [[varEffect, 0.5], [0.5, varEffect]]
+        corTrait = float(parameters['corTrait'])
+        covTrait = []
+        for i in range(nTrait):
+            covTrait.append([corTrait * varEffect**2]*nTrait)
+            covTrait[i][i] = varEffect
+        parameters['covTrait'] = covTrait  
 
-    if h2 <= 0:
-        sys.exit('Null heritability is not allowed')
+
+    testParameters(h2, h2_others, nTrait)
 
     if not os.path.exists(savedFolder):
         os.mkdir(savedFolder)
@@ -148,7 +185,7 @@ if __name__ == '__main__':
     ## generate the ancestry of N diploid individuals (i.e. 2N sequences)
     ## recombination rate: per-site value
     ## each chromosomes are independant -> one replicate = one chromosome
-    ts = msprime.sim_ancestry(samples = N, sequence_length = Lchr, population_size = Npop, recombination_rate = rho, num_replicates = nChr)
+    ts = msprime.sim_ancestry(samples = N, sequence_length = Lchr, population_size = Npop, recombination_rate = rho, num_replicates = nChr, random_seed = SEED)
 
     ## add (neutral) mutations to a tree sequence
     mut_model = msprime.BinaryMutationModel() ## binary model to only have biallelic variants (0 or 1, 0 being the ancestral allele)
@@ -179,31 +216,63 @@ if __name__ == '__main__':
             founders[ind][loc+L] = genoList[ix2[loc]] ## allele on the homologous chromosome (diploids)
 
 
+    ## ID of the SNPs, and their corresponding chromosomes
+    snp_id = [str(i+1).rjust(len(str(L)), '0') for i in range(L)]
+    chr_id = [[i+1]*Lchr for i in range(nChr)] 
+    chr_id = [str(j) for i in chr_id for j in i]
+    
+    ## reference and alternative alleles for each SNP
+    ## randomly drawn
+    alleles = np.array(['A', 'T', 'C', 'G'])
+    ref = [random.choice(alleles) for i in range(L)]
+    alt = [random.choice(alleles[alleles != ref[i]]) for i in range(L)]
+    
+    ## genetic coordinates of each SNP
+    ## consider a uniform recombination map, with the same recombination rate between all SNPs
+    ## genetic positions = cumulative sum of the recombination rate
+    genPos = [ np.array([rho]*Lchr).cumsum() for i in range(nChr)] 
+    genPos = [j for i in genPos for j in i]
+    
+    ## rmk: the snp id, chr id, ref and alt alleles, and the genetic positions will be saved in the same file as the SNPs effects
+    
+    
     #-------------------- forward-in-time simulations, with selection
-
+    
+    ## define which markers are QTLs and which ones are neutral
+    ## in the case of proportionQTL < 1
+    ## consider that all chromosomes have the same number of QTLs
+    ## that are randomly placed along the chromosomes
+    if Lchr >= 10:
+        Lqtl = round(propQTL*Lchr) ## number of QTL per chromosome
+        qtl = [random.sample([0]*(Lchr-Lqtl) + [1]*Lqtl, Lchr) for i in range(nChr)] ## 0 = neutral sites, 1 = QTL
+        qtl = [j for i in qtl for j in i]
+    
+    ## if there are less than 10 markers per chromosome 
+    ## consider all chromosomes together
+    ## (if less than 10, then the proportion of QTLs cannot be correctly represented on a per-chromosome basis)
+    if Lchr < 10:
+        Lqtl = round(propQTL*L)
+        qtl = random.sample([0]*(L-Lqtl) + [1]*Lqtl, L)
+    
     ## consider that all the variants can be QTLs
     ## with a given distribution of effect (normal distribution?)
-    if nTrait == 1:
+    ## rmk: to define beta, it must not have been defined previously (in the specific scenario)
+    if nTrait == 1: 
         beta = list(norm.rvs(size = L, loc = 0, scale = np.sqrt(varEffect)))
-        with open(savedFolder + "/beta.txt", "w") as out:
-            for i in beta:
-                out.write(str(i) + "\n")
-
+        for ix,i in enumerate(qtl):
+            beta[ix] = i*beta[ix] ## if the marker ix is neutral then i = 0 and thus, its effect will be 0, hence it will be the one previously drawn
+    
     if nTrait > 1:
         ## if there are more than one trait, use a multivariate normal to define correlated beta
         ## use the betas of the first trait (arbitrary decision) to calculate the trait that will be used to define the fitness in simuPOP
         ## to not calculate the breeding value and the phenotype of the other traits (can be calculated as posteriori as we have the betas)
         betaAll = multivariate_normal.rvs(size = L, mean = [0]*nTrait, cov = covTrait)
-        with open(savedFolder + "/beta.txt", "w") as out:
-            for i in betaAll:
-                out.write('\t'.join(['%.4f' % x for x in list(i)]) + "\n")
+        for ix,i in enumerate(qtl):
+                betaAll[ix] = i*betaAll[ix]
         ## to define the trait associated in simupop, use the first trait
         beta = [i[0] for i in betaAll]
-
-    ## for now the betas are drawn from a normal distribution, but will also need to include:
-    ## - a given proportion are neutral with the others being major effects
-    ## - multi-trait: correlation between effects; effects dranwn from a multi-normal distribution
-
+    
+    
     ## initialize the population
     ## with the same population size as the one defined by msprime
     ## and use the number of variants for the number of loci
@@ -221,6 +290,30 @@ if __name__ == '__main__':
         founders2.append([ind.info('ind_id'), founders[i]])
 
     selModel = FisherGeometricalModel(optW = optim, varW = varW)
+
+    ## calculate the genetic values before the standardization (to get varP = 1)
+    geneticValue = initGeneticValue(beta, pop)
+    varA = np.var(geneticValue)
+
+    ## want to standardize the phenotypic variance to 1
+    ## thus, we will standardize the beta by the realized phenotypic standard deviation (ie sqrt(varA/h2))
+    if nTrait == 1:
+        beta = [i  / np.sqrt(varA/h2) for i in beta]
+        with open(savedFolder + "/SNP_INFO.txt", "w") as out:
+            out.write("snp_id\tchr_id\tgen_pos\tREF\tALT\ttrait_1" + '\n')
+            for ix,i in enumerate(beta):
+                listInfo = [snp_id[ix], chr_id[ix], str(genPos[ix]), ref[ix], alt[ix]]
+                out.write('\t'.join(['%s' % x for x in listInfo]) + '\t' + str(i) + "\n")
+    
+    if nTrait > 1:
+        betaAll = betaAll / np.sqrt(varA/h2)
+        beta = [i[0] for i in betaAll]
+        ## if more than one trait, divide all betas by realized varP 
+        with open(savedFolder + "/SNP_INFO.txt", "w") as out:
+            out.write("snp_id\tchr_id\tgen_pos\tREF\tALT\t" + '\t'.join(['trait_' + str(i) for i in range(nTrait)]) + '\n')
+            for ix,i in enumerate(betaAll):
+                listInfo = [snp_id[ix], chr_id[ix], str(genPos[ix]), ref[ix], alt[ix]]
+                out.write('\t'.join(['%s' % x for x in listInfo]) + '\t' + '\t'.join(['%.4f' % x for x in list(i)]) + "\n")
 
     ## initialize the genetic values
     geneticValue = initGeneticValue(beta, pop)
@@ -245,6 +338,14 @@ if __name__ == '__main__':
     pop.dvars().N = N
 
     # sim.dump(pop, ancGens = sim.ALL_AVAIL, output = ">>" + savedFolder + "/initialPop.txt")
+    
+    ## save the header of the genotype file
+    with open(savedFolder + "/genotype.txt", "w") as f:
+        f.write("ind_id " + ' '.join(['%s' %x for x in snp_id]) + '\n')
+
+    ## save the header of the IBD file
+    with open(savedFolder + "/IBD.txt", "w") as f:
+        f.write("ind_id homologous_chr " + ' '.join(['%s' %x for x in snp_id]) + '\n')
 
     ## evolution of the population
     pop.evolve(
@@ -262,8 +363,8 @@ if __name__ == '__main__':
             ## need to do it now, after having evaluated their fitness via PySelector
             ## if were to do it in postOps with avgFitness: evaluate the average fitness of the PARENTS (not what we want!!!)
             ## for the last generation (offspring), apply the selector outside of pop.evolve to get their fitness
-            #sim.PyEval(r"'%d\t' %gen", step = 1, output = '>>' + savedFolder + '/fit/fit' + str(rep) + ".txt"),
-            #sim.PyEval(r"'\t'.join(['%.4f' % x for x in fitness]) + '\n'", stmts = "fitness = pop.indInfo('fitness')", exposePop = 'pop', step = 1, output = '>>' + savedFolder + '/fit/fit' + str(rep) + ".txt"),
+            sim.PyEval(r"'%d\t' %gen", step = 1, output = '>>' + savedFolder + '/fitness.txt'),
+            sim.PyEval(r"'\t'.join(['%.4f' % x for x in fitness]) + '\n'", stmts = "fitness = pop.indInfo('fitness')", exposePop = 'pop', step = 1, output = '>>' + savedFolder + '/fitness.txt'),
         ],
         matingScheme = sim.HomoMating(
             chooser = sim.RandomParentsChooser(True, selectionField = 'fitness'),
@@ -291,25 +392,66 @@ if __name__ == '__main__':
 
 
     ## apply the selector to the offsprings of the last generation to get their fitness
-    #lastFit = []
-    #for ind in pop.individuals():
-    #    lastFit.append(selModel.fitness(ind.phenotype))
-    #with open(savedFolder + '/fit/fit' + str(rep) + '.txt', 'a') as f:
-    #    f.write(str(G+1) + '\t')
-    #    f.write('\t'.join(['%.4f' % x for x in lastFit]) + '\n')
-
+    lastFit = []
+    for ind in pop.individuals():
+        lastFit.append(selModel.fitness(ind.phenotype))
+    with open(savedFolder + '/fitness.txt', 'a') as f:
+        f.write(str(G+1) + '\t')
+        f.write('\t'.join(['%.4f' % x for x in lastFit]) + '\n')
+    
+    ## calculate the breeding value and phenotype of the other trait(s) (i.e. the ones not under selection)
+    ## each trait will have a different heritability
+    ## need the genotype matrix
+    if nTrait > 1:
+        geno = np.loadtxt(savedFolder + '/genotype.txt', skiprows = 1)
+        bv = []
+        pheno = []
+        for i in range(nTrait-1):
+            ibeta = [j[i+1] for j in betaAll]
+            bv.append([sum([ibeta[iloc] * locus  for iloc,locus in enumerate(ind[1:])]) for ind in geno])
+            ## calculate the genetic variance of the initial population 
+            ## -> will be used to calculate the environmental variance
+            ## and then the phenotype
+            u = bv[i][:N]
+            varA = np.var(u)
+            varE = varA*(1-h2_others[i])/h2_others[i] ## varE is constant with time
+            varP = varE + varA
+            envNoise = list(norm.rvs(size = len(bv[i]), loc = 0, scale = np.sqrt(varE)))
+            phenotype = [sum(x) for x in zip(bv[i], envNoise)]
+            pheno.append(phenotype)
+    
     ## dump the whole population (all generations) in a file
     ## genotypes included, as well as the pedigree informations
     ## for now do that, but will want to save the genotypes only in a specific file
     # sim.dump(pop, ancGens = sim.ALL_AVAIL, output = ">>" + savedFolder + "/genotype.txt")
 
+    ## add the fitness as a column of the pedigree file
+    fitness = np.loadtxt(savedFolder + '/fitness.txt')
+    fitness = fitness.tolist()
+    fitness = [j for i in fitness for j in i[1:]] ## the first element is the generation
 
+    pedigree = []
+    with open(savedFolder + '/pedigree.txt', 'r') as f:
+        for ix, i in enumerate(f):
+            iline = i.split('\n')[0].split(' ')
+            for j in range(nTrait-1):
+                iline.append(str(pheno[j][ix]))
+                iline.append(str(bv[j][ix]))
+            iline.append(str(fitness[ix]))
+            pedigree.append(iline)
 
+    ## overwrite the pedigree with the completed one
+    with open(savedFolder + '/pedigree.txt', 'w') as f:
+        lineHeader = ['ind_id', 'father_id', 'mother_id', 'sex', 'affection', 'generation'] 
+        lineTrait = [['pheno' + str(i+1), 'bv' + str(i+1)] for i in range(nTrait)]
+        lineTrait = [j for i in lineTrait for j in i]
+        lineHeader = lineHeader + lineTrait + ['fitness']
+        f.write(' '.join(['%s' %x for x in lineHeader]) + '\n')
+        for i in pedigree:
+            f.write(' '.join(i) + '\n')
 
-
-
-
-
+    ## remove the - now useless - fitness file
+    os.remove(savedFolder + '/fitness.txt')
 
 
 
