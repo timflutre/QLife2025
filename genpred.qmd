@@ -4,7 +4,7 @@ authors: "E. Tourrette, T. Flutre, B. Servin"
 format:
   html:
     toc: true
-    toc-depth: 2
+    toc-depth: 5
     toc-location: left
     number-sections: true
 editor: visual
@@ -77,19 +77,19 @@ As a result, the genetic variance is the expectation, over the individual genoty
 
 Most likely, the genetic value is a non-linear function of QTL genetic effects and genotypes.
 Moreover, under sexual reproduction (on which we focus here), a key insight is that a parent only transmits to its offsprings a single allele at each QTL, not its whole genotype.
-The strategy hence consists in approximating the genetic value by linearly regressing it on allele content: $g_i = \boldsymbol{z_i}^T \boldsymbol{\alpha} + \delta_i$ where $\boldsymbol{\alpha}$ is the vector of **additive genetic effects** of the QTLs (also known allele substitutions) and $\delta_i$ is a residual deviation including intra-locus and inter-locus interactions (dominance and epistasis, respectively) as well as QTL-environment interactions.
-Finding the best approximation, in the sense of the least-squares, leads to: $\boldsymbol{\alpha} = Cov(z_i,z_i^T)^{-1} Cov(z_i,g_i)$ where $\Sigma_z := Cov(z_i,z_i^T)$ corresponds to the (co)variances of allelic content.
+The strategy hence consists in approximating the genetic value by linearly regressing it on allele content: $g_i = \boldsymbol{z_i}^T \boldsymbol{\alpha} + \delta_i$ where $\boldsymbol{\alpha}$ is the vector of **additive genetic effects** of the QTLs (also known as allele substitutions) and $\delta_i$ is a residual deviation including intra-locus and inter-locus interactions (dominance and epistasis, respectively) as well as QTL-environment interactions.
 The **additive genetic value** is then defined as: $g_{a,i} := \boldsymbol{z_i}^T \boldsymbol{\alpha}$.
+Finding the best approximation, in the sense of the least squares, leads to: $\boldsymbol{\alpha} = Cov(z_i,z_i^T)^{-1} Cov(z_i,g_i)$ where $\Sigma_z := Cov(z_i,z_i^T)$ corresponds to the (co)variances of allelic content.
 
-The **breeding value** (BV) of individual $i$ is defined as twice the expected deviation of the mean phenotype of this individual's progeny from population mean when mated at random to other individuals from the population: $BV_i = 2 \times Exp[y_{\text{offsprings of $i$}} - \mu]$, so that the breeding value of an individual quantifies its value as a parent.
+The **breeding value** (BV) of individual $i$ is defined as twice the expected deviation of the mean phenotype of this individual's progeny from the population mean when mated at random to other individuals from the population: $BV_i = 2 \times Exp[y_{\text{offsprings of $i$}} - \mu]$, so that the breeding value of an individual quantifies its value as a parent.
 The breeding value is not exactly equal to the additive genetic value because it is not only half the additive genetic effects that are transmitted from parent to offspring, but also a small part of epistatic interactions.
 
-Based on the linear regression above, the genetic variance can be decomposed into the **additive genetic variance**, defined as: $\sigma_a^2 := \boldsymbol{\alpha}^T \Sigma_z \boldsymbol{\alpha})$.
+Based on the linear regression above, the **additive genetic variance** is defined as: $\sigma_a^2 := \boldsymbol{\alpha}^T \Sigma_z \boldsymbol{\alpha}$.
 More specifically:
 \begin{align}
-\sigma_a^2 = \sum_j Var(z_{ij} \alpha_j^2 \; + \; 2 \sum_j \sum_{j' > j} Cov(z_{ij},z_{ij'}) \alpha_j \alpha_{j'}
+\sigma_a^2 = \sum_j Var(z_{ij}) \alpha_j^2 \; + \; 2 \sum_j \sum_{j' > j} Cov(z_{ij},z_{ij'}) \alpha_j \alpha_{j'}
 \end{align}
-This highlights not only the contribution of genetic effects and variance of allelic contents to the genetic variance, but also of the covariance of allelic contents, which is also known as **linkage disequilibrium**.
+The additive genetic variance thus not only depends on the contribution of genetic effects and variance of allelic contents to the genetic variance, but also on the covariance of allelic contents, also known as **linkage disequilibrium**.
 The **narrow-sense heritability** is defined as: $h^2 := \sigma_a^2 / \sigma_p^2$.
 
 ## Genetic relationships without genomic markers
@@ -100,13 +100,14 @@ But these genes are usually unknown.
 Still, related individuals are more likely to be genetically similar because they are more likely to have inherited the same alleles at the QTLs.
 Two alleles will be **identical by descent** (IBD) if they come from the exact same allele in an ancestor some generations ago.
 
-To quantify this, the **coancestry coefficient** between individuals $i$ and $j$, noted $\phi_{A,ij}$, is the probability that one allele taken at random from each genotype are IBD.
-It can then be shown that the covariance between the additive genetic values of both individuals equals twice the product of the coancestry coefficient with the additive genetic variance: $\sigma_{A,ij} = 2 \, \phi_{A,ij} \, \sigma_A^2$.
+To quantify this, the **coancestry coefficient** between individuals $i$ and $i'$, noted $\phi_{a,ii'}$, is the probability that one allele taken at random from individual $i$ is IBD with an allele randomly drawn from individual $j$.
+It can then be shown that the covariance between the additive genetic values of both individuals equals twice the product of the coancestry coefficient with the additive genetic variance: $Cov(g_{a,i},g_{a,i'}) = 2 \, \phi_{a,ii'} \, \sigma_a^2$.
+The **additive genetic relationship** is twice the coancestry coefficient: $A_{ii'} := 2 \, \phi_{a,ii'}$.
 When the causal genes are unknown (most of the cases), the resemblance between relatives can thus be used to estimate the additive genetic variance.
 
-Concretely, this requires to phenotype $n$ individuals from multiple generations for which we know their **pedigree**, that is, their parentage relationships.
-The founders of the pedigree, assumed unrelated, form the **base population**, and the additive genetic variance of interest corresponds to the variance of their additive genetic values.
-Efficient algorithms exist to compute coancestry coefficients, and all pairwise **additive genetic relationships** are gathered into a matrix usually noted $A$ and called the numerator relationship matrix.
+Concretely, this requires to phenotype $n$ individuals from multiple generations for which we know their **pedigree**.
+The founders of the pedigree, assumed unrelated, form the **base population**: the additive genetic variance of interest is the variance of the founder's additive genetic values.
+Efficient algorithms exist to compute coancestry coefficients, and all pairwise additive genetic relationships are gathered into the so-called numerator relationship matrix noted $A$.
 
 ## Estimation of the additive genetic variance without genomic markers
 
@@ -114,9 +115,9 @@ Estimating variance components requires a **linear mixed model** (LMM) whose gen
 Moreover, $E[\boldsymbol{u}]=0$, $Var(\boldsymbol{u})=G$, $E[\boldsymbol{\epsilon}]=0$, $Var(\boldsymbol{\epsilon})=R$, and $Cov(\boldsymbol{u},\boldsymbol{\epsilon})=0$.
 
 In classical quantitative genetics, the specific type of LMM used to estimate the additive genetic variance is called "variance-component" (vc-LMM).
-The additive genetic values are modeled as random and their variance-covariance matrix is $G = \sigma_a^2 \, A$.
+The additive genetic values are modeled as random and their variance-covariance matrix is $\sigma_a^2 \, A$.
 Moreover, usually $R = \sigma^2 \, \text{Id}_n$.
-In practice, the variance components are estimated by maximum likelihood (ML) or **restricted maximum likelihood** (ReML).
+In practice, the variance components are estimated by **restricted maximum likelihood** (ReML).
 
 ## Prediction of additive genetic values without genomic markers
 
@@ -128,13 +129,13 @@ The additive genetic values of unphenotyped individuals can be predicted as long
 TODO: add formula
 
 This procedure is very useful but its accuracy can be much increased.
-Indeed, unphenotyped individuals with the same genetic relationships get the same genetic values.
-This is because the genetic relationships estimated from the pedigree are *expected* relationships.
+Indeed, unphenotyped individuals with the same genetic relationships get the same genetic values, as full siblings.
+This is because the genetic relationships estimated from the pedigree are *expected* relationships assuming an infinite number of loci.
 However, a parent passes a *sampled* half of its alleles to its offsprings, that is, a gamete carries a *random assortment* (RA) of parental alleles, also called **Mendelian deviations**.
 The breeding value of an offspring resulting from the cross of individuals $i$ and $i'$ can hence be modeled as: $BV_o = (1/2) BV_i + RA_i + (1/2) BV_{i'} + RA_{i'}$.
 
 Importantly, Mendelian deviations are what breeding relies on in order to obtain a positive response to selection.
-It is thus important to take these deviations into account when predicting genetic values.
+It is thus important to take these deviations into account, and which is made possible by genotyping individuals at $L$ markers.
 However, the usage of genomic markers in this purpose raises various questions, that will be explored below with simulations.
 
 <!--
@@ -186,6 +187,8 @@ inF <- file.path(projectDir, "simulations", "example_data", "pedigree.txt")
 stopifnot(file.exists(inF))
 pedDat <- read.table(inF, header=TRUE, sep=" ", stringsAsFactors=FALSE)
 str(pedDat)
+length(unique(pedDat$ind_id))
+table(pedDat$generation)
 ```
 
 ## SNP genotypes
@@ -201,12 +204,6 @@ str(genos)
 genos[1:3, 1:6]
 ```
 
-Allele frequencies:
-```{r}
-AFs <- colMeans(genos) / 2
-hist(AFs)
-```
-
 ## SNP effects
 
 ```{r}
@@ -219,16 +216,12 @@ length(unique(snpInfos$snp_id))
 table(snpInfos$chr_id)
 ```
 
-```{r}
-knitr::knit_exit()
-```
-
 ## Lineages
 
 ```{r}
 inF <- file.path(projectDir, "simulations", "example_data", "IBD.txt")
 stopifnot(file.exists(inF))
-IBDs <- read.table(inF, header=TRUE, sep="\t", stringsAsFactors=FALSE)
+IBDs <- read.table(inF, header=TRUE, sep="\t", stringsAsFactors=FALSE, check.names=FALSE)
 str(IBDs, list.len=6)
 IBDs[1:3, 1:6]
 ```
@@ -236,7 +229,7 @@ IBDs[1:3, 1:6]
 
 
 
-# Estimate the genetic variance
+# Estimating relationships
 
 ## True IBD relationships
 
@@ -277,45 +270,71 @@ hist(diag(A))
 hist(A[upper.tri(A)])
 ```
 
-## Realized relationships assuming HWE and no DL
+## Realized relationships
 
-### First estimator from VanRaden (2008)
+Let the markers be indexed by $l \in \{1,\ldots,L\}$, $f_l$ being the allele frequency of marker $l$ and $M_{il}$ being the number of reference allele for individual $i$ at marker $l$, so that $M$ is the $n \times L$ matrix of SNP genotypes.
+[Van Raden (2008)](http://dx.doi.org/10.3168/jds.2007-0980) proposed two estimators, relying on the molecular covariance and the allele frequency at each locus.
+Both estimators assume that the reference population is a population at HWE with allele frequencies equal to the allele frequencies observed in the sample.
 
-VanRaden P. 2008. Efficient methods to compute genomic predictions. Journal of Dairy Science. 91(11):4414–4423. doi:10.3168/jds.2007-0980.
+### First estimator
 
-TODO: compute on generation 0 and on the whole pop
+The estimator of molecular covariance is computed for each locus, summed over all locus, and standardized by the total molecular variance:
+\begin{align}
+\hat{\phi}_{a,ii'}^{(VR1)} = \frac{\sum_{l=1}^L (M_{il} - 2 \hat{f}_l)(M_{i'l} - 2 \hat{f}_l)}{2 \sum_{l=1}^L \hat{f}_l (1 - \hat{f}_l)}
+\end{align}
+
+In matrix form, the matrix of SNP genotypes, $M$, is centered, $Z$, so that $GRM_{VR1} := Z Z^T / (2 \sum_l \hat{f}_l (1 - \hat{f}_l))$.
 
 ```{r}
-tmp <- matrix(rep(1, nrow(genos))) %*% (2 * AFs)
-Z <- genos - tmp
-rm(tmp)
-GRM_vr <- tcrossprod(Z, Z) / (2 * sum(AFs * (1 - AFs)))
+estimVanRanden1 <- function(genos, AFs){
+  tmp <- matrix(rep(1, nrow(genos))) %*% (2 * AFs)
+  Z <- genos - tmp
+  tcrossprod(Z, Z) / (2 * sum(AFs * (1 - AFs)))
+}
 ```
 
-Plot:
+#### Generation 0
+
+If the sample is at HWE, the diagonal should be centered on 1 and the off-diagonal on 0:
+```{r}
+inds_gen0 <- pedDat$ind_id[pedDat$generation == 0]
+AFs_gen0 <- colMeans(genos[inds_gen0,]) / 2
+hist(AFs_gen0)
+GRM_VR1_gen0 <- estimVanRanden1(genos[inds_gen0,], AFs_gen0)
+image(as(GRM_VR1_gen0, "Matrix"), main="GRM (Van Raden 1, generation 0)")
+hist(diag(GRM_VR1_gen0), main="diag of GRM (Van Raden 1, generation 0)")
+hist(GRM_VR1_gen0[upper.tri(GRM_VR1_gen0)], main="offdiag of GRM (Van Raden 1, generation 0)")
+```
+
+#### All generations
+
 ```{r, fig.width=10}
-image(as(GRM_vr, "Matrix"), main="GRM (Van Raden)")
-hist(diag(GRM_vr))
-hist(GRM_vr[upper.tri(GRM_vr)])
+AFs <- colMeans(genos) / 2
+hist(AFs)
+GRM_VR1 <- estimVanRanden1(genos, AFs)
+image(as(GRM_VR1, "Matrix"), main="GRM (Van Raden 1, all generations)")
+hist(diag(GRM_VR1), main="diag GRM (Van Raden 1, all generations)")
+hist(GRM_VR1[upper.tri(GRM_VR1)], main="offdiag GRM (Van Raden 1, all generations)")
 ```
 
-### Second estimator from VanRaden (2008)
+### Second estimator
 
-VanRaden P. 2008. Efficient methods to compute genomic predictions. Journal of Dairy Science. 91(11):4414–4423. doi:10.3168/jds.2007-0980.
+The estimator of molecular covariance is computed for each locus, standardized, and summed over all locus:
+\begin{align}
+\hat{\phi}_{a,ii'}^{(VR2)} = \sum_{l=1}^L \frac{(M_{il} - 2 f_l)(M_{i'l} - 2 f_l)}{2 f_l (1 - f_l)}
+\end{align}
 
 ```{r}
 ## TODO
 ```
 
-### Estimator from Yang et al (2010)
+### Other estimators
 
-Yang J, Benyamin B, McEvoy B, Gordon S, Henders A, Nyholt D, Madden P, Heath A, Martin N, Montgomery G, et al. 2010. Common SNPs explain a large proportion of the heritability for human height. Nature genetics. 42(7):565–569. doi:10.1038/ng.608.
+[Yang et al (2010)](http://dx.doi.org/10.1038/ng.608) proposed an estimator similar to the second one from Van Raden (2008).
 
-Similar to the 2nd estimator from Van Raden (2008).
-
-## Estimator from Astle-Balding
-
+<!--
 Astle W, Balding D. 2009. Population structure and cryptic relatedness in genetic association studies. Statistical Science. 24(4):451–471. doi:10.1214/09-sts307.
+-->
 
 ## LDAK estimator
 
@@ -344,9 +363,8 @@ Schreck N, Piepho H-P, Schlather M. 2019. Best Prediction of the Additive Genomi
 ## Estimate variance components
 
 ```{r}
-hist(pedDat$phenotype)
-plot(pedDat$breeding_value, pedDat$phenotype)
-
+hist(pedDat$pheno1)
+plot(pedDat$bv1, pedDat$pheno1)
 ```
 
 
