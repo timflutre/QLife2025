@@ -345,7 +345,7 @@ if __name__ == '__main__':
 
     ## save the header of the IBD file
     with open(savedFolder + "/IBD.txt", "w") as f:
-        f.write("ind_id homologous_chr" + '\t' + '\t'.join(['%s' %x for x in snp_id]) + '\n')
+        f.write("ind_id\thomologous_chr" + '\t' + '\t'.join(['%s' %x for x in snp_id]) + '\n')
 
     ## evolution of the population
     pop.evolve(
