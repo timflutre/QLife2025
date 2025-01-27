@@ -43,63 +43,120 @@ In the goal of understanding the genetic determinism of complex traits, this ses
 
 
 
-# Reminder of quantitative genetics without markers
+# Reminder of central concepts
 
-Genetics is the study of heritable variation and the goals of quantitative genetics are to (i) partition phenotypic variance into genetic vs. environmental components, (ii) predict genotypic values based on the resemblance between relatives, and (iii) find the underlying loci contributing to the genetic variance and values.
-See the book from Lynch and Walsh (1998).
+Genetics is the study of heritable variation, and the goals of quantitative genetics are to (i) partition phenotypic variance into genetic vs. environmental components, (ii) predict genotypic values based on the resemblance between relatives, and (iii) find the underlying loci contributing to the genetic variance and values.
+In the following, the most important concepts are briefly summarized for traits displaying quantitative variation; see Lynch and Walsh (1998) as well as [de Los Campos (2015)](https://dx.plos.org/10.1371/journal.pgen.1005048) from more details.
 
-Concerning the first goal, the phenotypic value of any individual for a given trait, $P$, is partitioned into the **genotypic value**, $G$, and an environmental deviation, $E$.
-The genotypic value is defined as the expectation of the phenotypic value over all possible environments: $G = Exp[P]$, whereas $E$ is interpreted as analogous to a residual error.
-In the absence of genotype-environment covariance, the squared correlation coefficient between $G$ and $P$, called the **broad-sense heritability** $H^2$, equals the proportion of phenotypic variance that is of genetic origin: $H^2 = \sigma_G^2 / \sigma_P^2$.
+## Definition of the additive genetic variance
 
-Furthermore, the genotypic value consists in the genetic effects of all causal loci on the trait.
-Assuming a single biallelic QTL for the trait, its additive **gene action** is defined as $a := (G_{22} - G_{11}) / 2$, with $G_{11}=-a$ and $G_{22}=+a$, and the dominance one as $d := G_{12} - (G_{11}+G_{22})/2$.
+Let us imagine a population of $n$ diploid individuals at Hardy-Weinberg equilibrium (HWE), phenotyped for a given trait.
+In the theory of quantitative genetics, if part of the phenotypic variation is of genetic origin, it means that (i) we assume the existence of $q$ quantitative trait locus (QTLs) with genetic effects on the trait, and (ii) the genetic variance comes from the individuals differing by their genotypes at these QTLs.
+With $i \in \{1,\ldots,n\}$ to index the individuals, the phenotypic value of individual $i$ is noted $y_i$.
+With $j \in \{1,\ldots,q\}$ to index the QTLs, the genotype of this individual at QTL $j$ corresponds to its allelic content and is noted $z_{ij}$.
+The genotype of individual $i$ at all QTLs is the vector $\boldsymbol{z_i}$.
+To simplify, we also center all variables: $E[y_i] = E[z_{ij}] = 0$.
+The **genetic value** of an individual is then defined as its expected phenotypic value, over all possible environments, given its QTL genotypes:
+\begin{align}
+g_i = E_{env}[y_i|\boldsymbol{z_i}]
+\end{align}
 
-Under sexual reproduction (on which we focus here), a key insight is that a parent only transmits to its offsprings a single allele at each QTL, not its whole genotype.
-The genotypic value of an individual can hence be partitioned into a part that can be transmitted to offsprings and a part that cannot.
-However, when many QTLs are involved, they usually do not act additively, that is, the genetic effects at a locus depend on the genotypes at other locus, these gene interactions being known as *epistasis*.
-As a result, $G$ can be a very complicated function of genetic effects.
-To solve this, Fisher searched for the best linear approximation of a genotypic value by regressing it on gene contents.
+In a given macro-environment, an analysis of variance is applied with the phenotypic value as response variable and the genetic value as explanatory factor: $y_i = g_i + \epsilon_i$, where $\epsilon_i$ is a residual error corresponding to micro-environmental variation.
+By construction: $\sigma_p^2 = \sigma_g^2 + \sigma^2$.
+Moreover, the squared correlation between $g$ and $y$, known as the **broad-sense heritability**, equals: $H^2 := \sigma_g^2 / \sigma_p^2$.
 
-Assuming a population of diploid individuals at Hardy-Weinberg equilibrium (HWE), and a single biallelic QTL, the alleles are noted $A_1$ and $A_2$, the reference allele is arbitrarily chosen as being $A_2$, the frequency of the reference allele is noted $f$, and the gene content, $N_k$, is the number of copies of allele $k$ for a given genotype.
-The linear regression on the gene content of the reference allele hence is: $G_{kl} = \mu + \alpha N_2 + \delta_{kl}$.
-The slope is called the **substitution effect**: $\alpha = a + (1 - 2 f) d$ under HWE.
+The **genetic variance** for the trait in the population is informally defined as the variance of the genetic values.
+However, these combine two sources of information, both being unknown: the genetic effects of the QTLs as well as the genotypes of the individual at the QTLs.
+In the classical framework of quantitative genetics, inspired by the frequentist paradigm of statistics, the QTL genetic effects are considered as "fixed parameters" whereas the individual genotypes at QTLs are considered as "random variables".
+As a result, the genetic variance is the expectation, over the individual genotypes at the QTLs, of the squared deviation of the genetic values from their population mean:
+\begin{align}
+\sigma_g^2 &:= E_z[ (g_i - E_z[g_i])^2 ] = E_z[g_i^2] - (E_z[g_i])^2 \; \text{(by definition)} \\
+&= E_z[g_i^2] - (E_z[E_{env}[y_i|\boldsymbol{z_i}]])^2 = E_z[g_i^2] - (E_{env}[y_i])^2 \; \text{(law of total expectation)}  \\
+&= E_z[g_i^2]
+\end{align}
 
-Note that the gene actions do not depend on allele frequencies, that is, they can be defined regardless of the allele frequencies in the population under study.
-As such, the genotypic values expressed only in terms of gene actions, are sometimes called "physiological", "functional" or also "biological", which is in contrast with the substitution effect that does depend on the allele frequency, and hence is said to be "populational" or also "statistical" ([Alvarez-Castro and Carlborg, 2007](http://dx.doi.org/10.1534/genetics.106.067348); [Vitezica et al, 2013](http://www.genetics.org/content/206/3/1297)).
-To avoid confusion, some authors use the term "genotypic value" for the functional case and the term "genetic value" for the populational case.
+Most likely, the genetic value is a non-linear function of QTL genetic effects and genotypes.
+Moreover, under sexual reproduction (on which we focus here), a key insight is that a parent only transmits to its offsprings a single allele at each QTL, not its whole genotype.
+The strategy hence consists in approximating the genetic value by linearly regressing it on allele content: $g_i = \boldsymbol{z_i}^T \boldsymbol{\alpha} + \delta_i$ where $\boldsymbol{\alpha}$ is the vector of **additive genetic effects** of the QTLs (also known allele substitutions) and $\delta_i$ is a residual deviation including intra-locus and inter-locus interactions (dominance and epistasis, respectively) as well as QTL-environment interactions.
+Finding the best approximation, in the sense of the least-squares, leads to: $\boldsymbol{\alpha} = Cov(z_i,z_i^T)^{-1} Cov(z_i,g_i)$ where $\Sigma_z := Cov(z_i,z_i^T)$ corresponds to the (co)variances of allelic content.
+The **additive genetic value** is then defined as: $g_{a,i} := \boldsymbol{z_i}^T \boldsymbol{\alpha}$.
 
-The part of the genotypic value that can be transmitted to offsprings is called the **additive genetic value**.
-In the case of a single QTL, it equals: $G_{kl,A} := \alpha_k + \alpha_l$, where $\alpha_k$ is the partial regression coefficient of $G_{kl}$ on $N_k$.
-The additive genetic value is also called the **breeding value** defined as twice the expected deviation of the mean phenotype of an individual's progeny from population mean when mated at random to other individuals from the population: $BV = 2 \times Exp[P_{offspring} - \mu]$.
-The breeding value of an individual hence quantifies its value as a parent.
+The **breeding value** (BV) of individual $i$ is defined as twice the expected deviation of the mean phenotype of this individual's progeny from population mean when mated at random to other individuals from the population: $BV_i = 2 \times Exp[y_{\text{offsprings of $i$}} - \mu]$, so that the breeding value of an individual quantifies its value as a parent.
+The breeding value is not exactly equal to the additive genetic value because it is not only half the additive genetic effects that are transmitted from parent to offspring, but also a small part of epistatic interactions.
 
-The **additive genetic variance** is then defined as the variance of the additive genetic values.
-In the case of a single QTL, it equals: $\sigma_A^2 := 2 f (1 - f) \alpha^2$ under HWE.
-Note that this variance is population-specific since it depends on the allele frequency and, because it depends on $\alpha$ that itself depends on both $a$ and $d$, the relative magnitude of genetic variances does not reflect the relative importance of gene actions ([Huang and Mackay, 2016](http://dx.plos.org/10.1371/journal.pgen.1006421)).
+Based on the linear regression above, the genetic variance can be decomposed into the **additive genetic variance**, defined as: $\sigma_a^2 := \boldsymbol{\alpha}^T \Sigma_z \boldsymbol{\alpha})$.
+More specifically:
+\begin{align}
+\sigma_a^2 = \sum_j Var(z_{ij} \alpha_j^2 \; + \; 2 \sum_j \sum_{j' > j} Cov(z_{ij},z_{ij'}) \alpha_j \alpha_{j'}
+\end{align}
+This highlights not only the contribution of genetic effects and variance of allelic contents to the genetic variance, but also of the covariance of allelic contents, which is also known as **linkage disequilibrium**.
+The **narrow-sense heritability** is defined as: $h^2 := \sigma_a^2 / \sigma_p^2$.
 
-Two individuals are considered genetically identical for a given trait, that is, they have the same genotypic value, if they have the same genotypes at the QTLs for that trait.
+## Genetic relationships without genomic markers
+
+Two individuals are considered genetically identical for a given trait, that is, they have the same genetic value, if they have the same genotypes at the QTLs for that trait.
 In other words, what counts for two individuals to be genetically identical is if they have alleles that are **identical by states** (IBS) at causal genes.
-But these genes are usually unknown (at least here).
+But these genes are usually unknown.
 Still, related individuals are more likely to be genetically similar because they are more likely to have inherited the same alleles at the QTLs.
 Two alleles will be **identical by descent** (IBD) if they come from the exact same allele in an ancestor some generations ago.
 
 To quantify this, the **coancestry coefficient** between individuals $i$ and $j$, noted $\phi_{A,ij}$, is the probability that one allele taken at random from each genotype are IBD.
 It can then be shown that the covariance between the additive genetic values of both individuals equals twice the product of the coancestry coefficient with the additive genetic variance: $\sigma_{A,ij} = 2 \, \phi_{A,ij} \, \sigma_A^2$.
-When the causal genes are unknown (most of the cases), the resemblance between relatives can be used to predict the breeding values.
+When the causal genes are unknown (most of the cases), the resemblance between relatives can thus be used to estimate the additive genetic variance.
 
-Concretely, this requires to phenotype individuals from multiple generations for which we know the parentage relationships encoded into a **pedigree**.
-The founders of the pedigree, assumed unrelated, form the **base population**, and the additive genetic variance will correspond to the variance of their additive genetic values.
+Concretely, this requires to phenotype $n$ individuals from multiple generations for which we know their **pedigree**, that is, their parentage relationships.
+The founders of the pedigree, assumed unrelated, form the **base population**, and the additive genetic variance of interest corresponds to the variance of their additive genetic values.
 Efficient algorithms exist to compute coancestry coefficients, and all pairwise **additive genetic relationships** are gathered into a matrix usually noted $A$ and called the numerator relationship matrix.
 
-TODO: DL
+## Estimation of the additive genetic variance without genomic markers
 
-TODO: LMM
+Estimating variance components requires a **linear mixed model** (LMM) whose generic form is: $\boldsymbol{y} = X \boldsymbol{\beta} + Z \boldsymbol{u} + \boldsymbol{\epsilon}$, where $\boldsymbol{y}$ is the $n$-vector of phenotypes, $X$ is the $n \times p$ design matrix for the explanatory factors whose effects, $\boldsymbol{\beta}$, are modeled as "fixed", $Z$ is the $n \times q$ design matrix for the explanatory factors whose effects, $\boldsymbol{u}$, are modeled as "random", and $\boldsymbol{\epsilon}$ are residual errors.
+Moreover, $E[\boldsymbol{u}]=0$, $Var(\boldsymbol{u})=G$, $E[\boldsymbol{\epsilon}]=0$, $Var(\boldsymbol{\epsilon})=R$, and $Cov(\boldsymbol{u},\boldsymbol{\epsilon})=0$.
 
-TODO: genotypes as random and genetic effects as fixed
+In classical quantitative genetics, the specific type of LMM used to estimate the additive genetic variance is called "variance-component" (vc-LMM).
+The additive genetic values are modeled as random and their variance-covariance matrix is $G = \sigma_a^2 \, A$.
+Moreover, usually $R = \sigma^2 \, \text{Id}_n$.
+In practice, the variance components are estimated by maximum likelihood (ML) or **restricted maximum likelihood** (ReML).
 
+## Prediction of additive genetic values without genomic markers
 
-# Quantitative genetics with markers
+The **mixed model equations** (MMEs) are used to obtain formulas for the best linear unbiased estimator (BLUE) of the fixed effects, and the **best linear unbiased predictor** (BLUP) of the random effects: $BLUP(\boldsymbol{u}) = G Z^T V^{-1} (\boldsymbol{y} - X \boldsymbol{\beta})$ where $V :=  Z G Z^T + R$.
+When the estimates of the variance components are used, the so-called empirical BLUPs (eBLUPs) can be computed.
+
+The additive genetic values of unphenotyped individuals can be predicted as long as their additive genetic relationships with phenotyped individuals are known (pedigree).
+
+TODO: add formula
+
+This procedure is very useful but its accuracy can be much increased.
+Indeed, unphenotyped individuals with the same genetic relationships get the same genetic values.
+This is because the genetic relationships estimated from the pedigree are *expected* relationships.
+However, a parent passes a *sampled* half of its alleles to its offsprings, that is, a gamete carries a *random assortment* (RA) of parental alleles, also called **Mendelian deviations**.
+The breeding value of an offspring resulting from the cross of individuals $i$ and $i'$ can hence be modeled as: $BV_o = (1/2) BV_i + RA_i + (1/2) BV_{i'} + RA_{i'}$.
+
+Importantly, Mendelian deviations are what breeding relies on in order to obtain a positive response to selection.
+It is thus important to take these deviations into account when predicting genetic values.
+However, the usage of genomic markers in this purpose raises various questions, that will be explored below with simulations.
+
+<!--
+The definition of the substitution effect highlights the important fact that a gene does not "make" a trait, rather it is allelic differences that cause phenotypic differences ([Orgogozo et al, 2015](http://www.frontiersin.org/Evolutionary_and_Population_Genetics/10.3389/fgene.2015.00179/abstract); [de Vienne, 2021](https://link.springer.com/10.1007/s10709-021-00134-6)).
+That is why the first goal, in this framework, consists in an analysis of variance ([Lewontin, 2006](http://dx.doi.org/10.1093/ije/dyl062)).
+Moreover, the fact that the substitution effect depends on the allele frequency means that, as the latter changes due to evolutionary forces (drift, selection, migration), the former will change as a result.
+
+To introduce what genetic effects are, let us assume first that there is a single biallelic QTL, with alleles noted $A_1$ and $A_2$, the reference allele being arbitrarily chosen as being $A_2$, the frequency of the reference allele noted $f$, and the **gene content**, $N_k$, being the number of copies of allele $k$ for a given genotype.
+From a functional or physiological point of view, the genotypic value $G_{kl}$, i.e., the genetic value of genotype $A_k A_l$, is defined by its additive **gene action**, $a := (G_{22} - G_{11}) / 2$, with $G_{11}=-a$ and $G_{22}=+a$, and its dominance gene action, $d := G_{12} - (G_{11}+G_{22})/2$.
+The linear regression of genotypic value on gene contents hence is: $G_{kl} = \mu + \alpha_1 N_1 + \alpha_2 N_2 + \delta_{kl}$, where the $\alpha_k$'s are called **additive effects**.
+It can be reformulated into: $G_{kl} = \mu + \alpha N_2 + \delta_{kl}$, where the slope is called the **substitution effect**: $\alpha := \alpha_2 - \alpha_1 = a + (1 - 2 f) d$ under HWE.
+
+The part of the genotypic value corresponding to the sum of additive effects is called the **additive genetic value**: $G_{A} := \alpha_k + \alpha_l$ in the case of a single QTL.
+The **additive genetic variance** is then defined as the variance of the additive genetic values: $\sigma_A^2 := 2 f (1 - f) \alpha^2$ in the case of a single QTL under HWE.
+Note that this variance is population-specific since it depends on the allele frequency and, because it depends on $\alpha$ that itself depends on both $a$ and $d$, the relative magnitude of genetic variances does not reflect the relative importance of gene actions ([Huang and Mackay, 2016](http://dx.plos.org/10.1371/journal.pgen.1006421)).
+The **narrow-sense heritability** is the proportion of phenotypic variance that corresponds to the additive genetic variance: $h^2 := \sigma_A^2 / \sigma_P^2$.
+It plays a key role because the response to selection after one generation equals $h^2 \, S$ where $S$ is the selection differential, this relation being known as the **breeder's equation**.
+-->
+
+## Prediction of additive genetic values with genomic markers
+
+Let us now assume that 
 
 TODO
 
@@ -189,7 +246,7 @@ TODO
 
 ```
 
-## Expected IBD relationships from the pedigree
+## Expected genetic relationships from the pedigree
 
 Reformat the input data into a specific object with the `kinship2` package:
 ```{r}
@@ -207,7 +264,7 @@ if(FALSE){
 }
 ```
 
-Estimate the expected IBD, the `kinship` function using a recursive algorithm described in Lange (1997):
+Estimate the coancestry coefficient, the `kinship` function using a recursive algorithm described in Lange (1997):
 ```{r}
 A <- 2 * kinship(ped)
 dim(A)
@@ -285,10 +342,6 @@ Schreck N, Piepho H-P, Schlather M. 2019. Best Prediction of the Additive Genomi
 ```
 
 ## Estimate variance components
-
-\begin{align}
-\boldsymbol{y} = X \boldsymbol{\beta} + Z \boldsymbol{u} + \boldsymbol{\epsilon}
-\end{align}
 
 ```{r}
 hist(pedDat$phenotype)
