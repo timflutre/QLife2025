@@ -108,17 +108,17 @@ if __name__ == '__main__':
     default = {'savedFolder' : "/home/eliset/Desktop/qlife_2025/test/default",
                'optim' : 5,
                'varW' : 10,
-               'h2': [0.5, 0.9], ## can have multiple values if more than one trait; it's the first trait that will be selected for
+               'h2': [0.5,0.9], ## can have multiple values if more than one trait; it's the first trait that will be selected for
                'G' : 10,
                'N' : 100,
                'Npop' : 10000,
                'nTrait' : 2,
-               'nChr' : 1000,
-               'Lchr' : 1,
-               'rho' : 0,
-               'proportionQTL' : 0.5,
+               'nChr' : 5,
+               'Lchr' : 200,
+               'rho' : 1e-7,
+               'proportionQTL' : 1.0,
                'varEffect' : 1, ## variance of the distribution of QTL effects (suppose it's the same for all traits if multiple ones)
-               'corTrait': 0.5} ## correlation between the QTLs effects of the different traits; consider full pleiotropy
+               'corTrait': 0.5} ## correlation between the QTLs effects of the different traits; consider full pleiotropy (used only for ntrait > 1)
 
     ## rmk: the variance and covariance for the QTL effect is BEFORE the normalization by the phenotypic variance!!
 
@@ -300,7 +300,7 @@ if __name__ == '__main__':
     if nTrait == 1:
         beta = [i  / np.sqrt(varA/h2) for i in beta]
         with open(savedFolder + "/SNP_INFO.txt", "w") as out:
-            out.write("snp_id\tchr_id\tgen_pos\tREF\tALT\ttrait_1" + '\n')
+            out.write("snp_id\tchr_id\tgen_pos\tREF\tALT\tbeta_trait_0" + '\n')
             for ix,i in enumerate(beta):
                 listInfo = [snp_id[ix], chr_id[ix], str(genPos[ix]), ref[ix], alt[ix]]
                 out.write('\t'.join(['%s' % x for x in listInfo]) + '\t' + str(i) + "\n")
@@ -310,7 +310,7 @@ if __name__ == '__main__':
         beta = [i[0] for i in betaAll]
         ## if more than one trait, divide all betas by realized varP 
         with open(savedFolder + "/SNP_INFO.txt", "w") as out:
-            out.write("snp_id\tchr_id\tgen_pos\tREF\tALT\t" + '\t'.join(['trait_' + str(i) for i in range(nTrait)]) + '\n')
+            out.write("snp_id\tchr_id\tgen_pos\tREF\tALT\t" + '\t'.join(['beta_trait_' + str(i) for i in range(nTrait)]) + '\n')
             for ix,i in enumerate(betaAll):
                 listInfo = [snp_id[ix], chr_id[ix], str(genPos[ix]), ref[ix], alt[ix]]
                 out.write('\t'.join(['%s' % x for x in listInfo]) + '\t' + '\t'.join(['%.4f' % x for x in list(i)]) + "\n")
@@ -341,11 +341,11 @@ if __name__ == '__main__':
     
     ## save the header of the genotype file
     with open(savedFolder + "/genotype.txt", "w") as f:
-        f.write("ind_id " + ' '.join(['%s' %x for x in snp_id]) + '\n')
+        f.write("ind_id" + '\t' + '\t'.join(['%s' %x for x in snp_id]) + '\n')
 
     ## save the header of the IBD file
     with open(savedFolder + "/IBD.txt", "w") as f:
-        f.write("ind_id homologous_chr " + ' '.join(['%s' %x for x in snp_id]) + '\n')
+        f.write("ind_id homologous_chr" + '\t' + '\t'.join(['%s' %x for x in snp_id]) + '\n')
 
     ## evolution of the population
     pop.evolve(
