@@ -154,21 +154,15 @@ The **narrow-sense heritability** is the proportion of phenotypic variance that 
 It plays a key role because the response to selection after one generation equals $h^2 \, S$ where $S$ is the selection differential, this relation being known as the **breeder's equation**.
 -->
 
-## Prediction of additive genetic values with genomic markers
 
-Let us now assume that 
-
-TODO
-
+<!--
 In this part we are interested in decomposing the overall phenotypic variance in several components, notably the genetic variance and, more specifically, the additive genetic variance.
 How can it be estimated, and which improvements do markers provide?
 This part is heavily inspired by [Toro et al (2011)](http://www.gsejournal.org/content/43/1/27), [Legarra (2016)](http://dx.doi.org/10.1016/j.tpb.2015.08.005) and [Schreck et al (2019)](https://academic.oup.com/genetics/article/213/2/379/5930631).
 
 TODO: explain really what $\sigma_u^2$ is, as trace of cov(ui,uj) (see Schreck et al 2019)
+-->
 
-```{r}
-knitr::knit_exit()
-```
 
 
 # Run the simulation
@@ -199,9 +193,9 @@ str(pedDat)
 ```{r}
 inF <- file.path(projectDir, "simulations", "example_data", "genotype.txt")
 stopifnot(file.exists(inF))
-genos <- read.table(inF, header=TRUE, sep="\t", stringsAsFactors=FALSE, row.names=1)
-rownames(genos) <- as.character(genos[,1])
-genos <- as.matrix(genos[,-1])
+genos <- read.table(inF, header=TRUE, sep="\t", stringsAsFactors=FALSE,
+                    row.names=1, check.names=FALSE)
+genos <- as.matrix(genos)
 stopifnot(all(genos >= 0 & genos <= 2))
 str(genos)
 genos[1:3, 1:6]
@@ -213,34 +207,40 @@ AFs <- colMeans(genos) / 2
 hist(AFs)
 ```
 
+## SNP effects
+
+```{r}
+inF <- file.path(projectDir, "simulations", "example_data", "SNP_INFO.txt")
+stopifnot(file.exists(inF))
+snpInfos <- read.table(inF, header=TRUE, sep="\t")
+str(snpInfos)
+head(snpInfos)
+length(unique(snpInfos$snp_id))
+table(snpInfos$chr_id)
+```
+
+```{r}
+knitr::knit_exit()
+```
+
 ## Lineages
 
 ```{r}
 inF <- file.path(projectDir, "simulations", "example_data", "IBD.txt")
 stopifnot(file.exists(inF))
-IBDs <- read.table(inF, header=FALSE, sep="\t", stringsAsFactors=FALSE)
+IBDs <- read.table(inF, header=TRUE, sep="\t", stringsAsFactors=FALSE)
 str(IBDs, list.len=6)
 IBDs[1:3, 1:6]
 ```
 
-## SNP effects
-
-```{r}
-inF <- file.path(projectDir, "simulations", "example_data", "beta.txt")
-stopifnot(file.exists(inF))
-betas <- read.table(inF, header=FALSE, sep="\t")
-str(betas)
-head(betas)
-```
 
 
 
-
-# Estimate the (additive) genetic (co)variances
+# Estimate the genetic variance
 
 ## True IBD relationships
 
-TODO
+TODO Elise
 
 ```{r}
 
