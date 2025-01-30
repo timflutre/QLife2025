@@ -1,4 +1,4 @@
-Simulations generated for the QLife workshop (march 2025)      
+## Simulations generated for the QLife workshop (march 2025)      
 
 For the simulations, we use msprime (coalescent simulations) for the neutral burn-in phase and generate coalescence trees.                                     
 Mutations are then overlayed to these trees, to generate the genotypes of the founders (initial population).                                      
