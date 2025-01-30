@@ -8,16 +8,11 @@ Individual are selected based on their probability to have offsprings, i.e their
 The fitness of an individual is calculated using its phenotype, via an exponential fitness function: $e^{-(P - optimum)^2 / \sigma^{2}_{w}}$.                                   
 This function means that the farther the phenotype of an individual is from the optimum phenotype, the lower the fitness. This decrease of the fitness also depends on the width $\sigma^{2}_{w}$ of the function: the smaller varW is, the stronger the selection will be.                   
 
-The phenotype $P$ is calculated via adding a genetic contribution G to an environmental contribution $E$.                             
-The genetic contribution (or breeding value) is the part of the phenotype that will be transmitted to the next generation while the environmental contribution is a noise drawn from a normal distribution.                               
-The heritability $h^2$ will determine the part of the phenotype that is due to the genetic contribution (if $h^2 = 1$, then the phenotype is equal to the breeding value; on the contrary, if $h^2 = 0$, then the phenotype is equal to the environmental noise).
-Finally, the genetic contribution is obtained by adding the genotypes $x$ at all SNPs, weighted by the SNP effects $\beta$.          
+The phenotype $P$ is calculated via adding a genetic contribution G to an environmental contribution $E$: $P = G + E$.                             
+The genetic contribution (or breeding value) is the part of the phenotype that will be transmitted to the next generation while the environmental contribution is a noise drawn from a normal distribution ($E \sim N(0, \sigma^{2}_{E})$).                               
+The heritability $h^2$ will determine the part of the phenotype that is due to the genetic contribution ($h^2 = \sigma^{2}_{G} / \sigma^{2}_{P} = \sigma^{2}_{G} / (\sigma^{2}_{G} + \sigma^{2}_{E})$: if $h^2 = 1$, then the phenotype is equal to the breeding value; on the contrary, if $h^2 = 0$, then the phenotype is equal to the environmental noise).
+Finally, the genetic contribution is obtained by adding the genotypes $x$ at all SNPs, weighted by the SNP effects $\beta$ ($G = \sum_{i = SNP} x_i \beta_i$).          
 
-To summarize: 
-- $G = \sum_{i = SNP} x_i \beta_i$
-- $E \sim N(0, \sigma^{2}_{E})$
-- $P = G + E$
-- $h^2 = \sigma^{2}_{G} / \sigma^{2}_{P} = \sigma^{2}_{G} / (\sigma^{2}_{G} + \sigma^{2}_{E})$                                
 
 ### Installation of the necessary packages
 
