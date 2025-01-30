@@ -5,13 +5,14 @@ Mutations are then overlayed to these trees, to generate the genotypes of the fo
 We then use a forward-in-time simulator (simuPOP) to do multiple round of selection, using the previously generate founders as base population.                                    
 
 Individual are selected based on their probability to have offsprings, i.e their fitness.                                                         
-The fitness of an individual is calculated using its phenotype, via an exponential fitness function: exp(-(phenotype - optimum) ** 2 / varW).                                   
+The fitness of an individual is calculated using its phenotype, via an exponential fitness function: $\exp(-(P - optimum) ** 2 / \sigma^{2}_{w})$.                                   
 This function means that the farther the phenotype of an individual is from the optimum phenotype, the lower the fitness. This decrease of the fitness also depends on the width varW of the function: the smaller varW is, the stronger the selection will be.                   
 
-The phenotype P is calculated via adding a genetic contribution G to an environmental contribution E.                             
+The phenotype $P$ is calculated via adding a genetic contribution G to an environmental contribution $E$.                             
 The genetic contribution (or breeding value) is the part of the phenotype that will be transmitted to the next generation while the environmental contribution is a noise drawn from a normal distribution.                               
 The heritability $h^2$ will determine the part of the phenotype that is due to the genetic contribution (if $h^2 = 1$, then the phenotype is equal to the breeding value; on the contrary, if $h^2 = 0$, then the phenotype is equal to the environmental noise).
-Finally, the genetic contribution is obtained by adding the genotypes x at all SNPs, weighted by the SNP effects $\beta$.                                    
+Finally, the genetic contribution is obtained by adding the genotypes $x$ at all SNPs, weighted by the SNP effects $\beta$.          
+
 To summarize: 
 - $G = \sum_{i = SNP} x_i \beta_i$
 - $E \sim N(0, \sigma^{2}_{E})$
