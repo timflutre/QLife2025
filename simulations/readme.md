@@ -1,17 +1,10 @@
-Simulations generated for the QLife workshop (march 2025)       
-
-### Installation of the necessary packages
-
-Creation of the conda environment, via a yaml configuration file.  
-```
-conda env create -f simu_env.yml                           
-```
+Simulations generated for the QLife workshop (march 2025)      
 
 For the simulations, we use msprime (coalescent simulations) for the neutral burn-in phase and generate coalescence trees.                                     
 Mutations are then overlayed to these trees, to generate the genotypes of the founders (initial population).                                      
 We then use a forward-in-time simulator (simuPOP) to do multiple round of selection, using the previously generate founders as base population.                                    
 
-Individual are selected based on their probability to have offsprings, i.e their fitness.
+Individual are selected based on their probability to have offsprings, i.e their fitness.                                                         
 The fitness of an individual is calculated using its phenotype, via an exponential fitness function: exp(-(phenotype - optimum) ** 2 / varW).                                   
 This function means that the farther the phenotype of an individual is from the optimum phenotype, the lower the fitness. This decrease of the fitness also depends on the width varW of the function: the smaller varW is, the stronger the selection will be.                   
 
@@ -21,10 +14,16 @@ The heritability $h^2$ will determine the part of the phenotype that is due to t
 Finally, the genetic contribution is obtained by adding the genotypes x at all SNPs, weighted by the SNP effects $\beta$.                                    
 To summarize: 
 - $G = \sum_{i = SNP} x_i \beta_i$
-- $E ~ N(0, \sigma^{2}_{E})$
+- $E \sim N(0, \sigma^{2}_{E})$
 - $P = G + E$
-- $h^2 = \sigma^{2}_{G} / \sigma^{2}_{P} = \sigma^{2}_{G} / (\sigma^{2}_{G} + \sigma^{2}_{E})$
-                                         
+- $h^2 = \sigma^{2}_{G} / \sigma^{2}_{P} = \sigma^{2}_{G} / (\sigma^{2}_{G} + \sigma^{2}_{E})$                                
+
+### Installation of the necessary packages
+
+Creation of the conda environment, via a yaml configuration file.  
+```
+conda env create -f simu_env.yml                           
+```
 
 ```
 conda activate qlife_simu                                                                  
