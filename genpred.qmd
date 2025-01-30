@@ -202,7 +202,37 @@ IBDs[1:3, 1:6]
 TODO Elise
 
 ```{r}
+id <- IBDs[,1]
+chrh <- IBDs[,2]
+x <- IBDs[,-c(1:2)]
 
+## extract the number of haplotypes, sites and individuals
+nHap <- nrow(x)
+nSit <- ncol(x)
+nInd <- nHap/2
+
+## calculate the number of sites, between two haplotypes, that come from the same individual and chromosome
+x <- t(x)
+G <- matrix(data = numeric(), nrow = nHap, ncol = nHap)
+for(h1 in 1:nHap) {
+    tmp <- x[,h1]
+    for(h2 in 1:h1) {
+        G[h1,h2] <- G[h2,h1] <- sum(tmp == x[,h2])
+    }
+}
+
+## calculate the relationship matrix between two individuals
+## via the number of sites that are in common between two individuals (four haplotypes)
+G2 <- matrix(numeric(), nrow = nInd, ncol = nInd)
+for(i in seq(1, 2*nInd, by = 2)) {
+    for(j in seq(i, 2*nInd, by = 2)) {
+        tmp <- G[i:(i+1),j:(j+1)]
+        G2[(i+1)/2,(j+1)/2] <- G2[(j+1)/2,(i+1)/2] <- sum(tmp)
+    }
+}
+
+G2 <- G2 / (4*nSit) ## divide by the number of sites times the number of haplotypes (= 2* number of ind)
+Kpedgrm <- G2
 ```
 
 ## Expected genetic relationships from the pedigree
