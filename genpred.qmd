@@ -231,8 +231,8 @@ for(i in seq(1, 2*nInd, by = 2)) {
     }
 }
 
-G2 <- G2 / (4*nSit) ## divide by the number of sites times the number of haplotypes (= 2* number of ind)
-Kpedgrm <- G2
+GRM_IBD <- G2 / (4*nSit) ## divide by the number of sites times the number of haplotypes (= 2* number of ind)
+
 ```
 
 ## Expected genetic relationships from the pedigree
