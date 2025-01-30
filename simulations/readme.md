@@ -6,7 +6,7 @@ We then use a forward-in-time simulator (simuPOP) to do multiple round of select
 
 Individual are selected based on their probability to have offsprings, i.e their fitness.                                                         
 The fitness of an individual is calculated using its phenotype, via an exponential fitness function: $e^{-(P - optimum)^2 / \sigma^{2}_{w}}$.                                   
-This function means that the farther the phenotype of an individual is from the optimum phenotype, the lower the fitness. This decrease of the fitness also depends on the width varW of the function: the smaller varW is, the stronger the selection will be.                   
+This function means that the farther the phenotype of an individual is from the optimum phenotype, the lower the fitness. This decrease of the fitness also depends on the width $\sigma^{2}_{w}$ of the function: the smaller varW is, the stronger the selection will be.                   
 
 The phenotype $P$ is calculated via adding a genetic contribution G to an environmental contribution $E$.                             
 The genetic contribution (or breeding value) is the part of the phenotype that will be transmitted to the next generation while the environmental contribution is a noise drawn from a normal distribution.                               
@@ -26,18 +26,20 @@ Creation of the conda environment, via a yaml configuration file.
 conda env create -f simu_env.yml                           
 ```
 
+And activate the environment to run the simulations
 ```
 conda activate qlife_simu                                                                  
 ```
 
 ### Usage
 
-Run the simulator: 
+Run the simulator, with the default values for the parameters: 
 ```
 python src/main.py                                 
 ```
 
-A certain number of parameters can be given as argument in the command line, under the format -parameter value.                          
+A certain number of parameters can be given as argument in the command line, under the format -parameter value.          
+
 The parameters that can be changed are the following (default value and expected type in parenthesis):                               
 - savedFolder (default; string): folder where the outputs of the simulator will be saved                          
 - optim (0; float): optimum of the fitness function                                 
@@ -64,7 +66,7 @@ Some remarks on the parameters:
 - the parameter is only relevant when nTrait > 1. Note that, if there are more than 2 traits and do not want the same correlation between the effects of the different trait, need to directly modify the variance-covariance matrix in the script
 - if the mutation rate is too low, we may have less variants (polymorphic sites) than Lchr, after the overlay of mutations on the tree (coalescent burn-in phase). In this case, we have added monomorphic (fixed) sites to have the total number of sites equal to Lchr per chromosome. Note that these sites have alternative alleles = NA
 
-Eg of usage with parameters (used to generate the example data): 
+Example of usage with parameters (used to generate the example data): 
 ```
 python QLife2025/simulations/src/main.py -savedFolder 'example_data_1' -optim 5 -varW 1 -nTrait 2 -h2 0.5,0.9 -nChr 5 -Lchr 200 -rho 0.005
 ```
