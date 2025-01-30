@@ -5,7 +5,7 @@ Mutations are then overlayed to these trees, to generate the genotypes of the fo
 We then use a forward-in-time simulator (simuPOP) to do multiple round of selection, using the previously generate founders as base population.                                    
 
 Individual are selected based on their probability to have offsprings, i.e their fitness.                                                         
-The fitness of an individual is calculated using its phenotype, via an exponential fitness function: $\e^{-(P - optimum)^2 / \sigma^{2}_{w}}$.                                   
+The fitness of an individual is calculated using its phenotype, via an exponential fitness function: $e^{-(P - optimum)^2 / \sigma^{2}_{w}}$.                                   
 This function means that the farther the phenotype of an individual is from the optimum phenotype, the lower the fitness. This decrease of the fitness also depends on the width varW of the function: the smaller varW is, the stronger the selection will be.                   
 
 The phenotype $P$ is calculated via adding a genetic contribution G to an environmental contribution $E$.                             
