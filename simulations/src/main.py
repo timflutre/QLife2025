@@ -300,17 +300,17 @@ if __name__ == '__main__':
     if nTrait == 1:
         beta = [i  / np.sqrt(varA/h2) for i in beta]
         with open(savedFolder + "/SNP_INFO.txt", "w") as out:
-            out.write("snp_id\tchr_id\tgen_pos\tREF\tALT\tbeta_trait_0" + '\n')
+            out.write("snp_id\tchr_id\tgen_pos\tREF\tALT\tbeta_trait_1" + '\n')
             for ix,i in enumerate(beta):
                 listInfo = [snp_id[ix], chr_id[ix], str(genPos[ix]), ref[ix], alt[ix]]
-                out.write('\t'.join(['%s' % x for x in listInfo]) + '\t' + str(i) + "\n")
+                out.write('\t'.join(['%s' % x for x in listInfo]) + '\t' + str(i+1) + "\n")
     
     if nTrait > 1:
         betaAll = betaAll / np.sqrt(varA/h2)
         beta = [i[0] for i in betaAll]
         ## if more than one trait, divide all betas by realized varP 
         with open(savedFolder + "/SNP_INFO.txt", "w") as out:
-            out.write("snp_id\tchr_id\tgen_pos\tREF\tALT\t" + '\t'.join(['beta_trait_' + str(i) for i in range(nTrait)]) + '\n')
+            out.write("snp_id\tchr_id\tgen_pos\tREF\tALT\t" + '\t'.join(['beta_trait_' + str(i+1) for i in range(nTrait)]) + '\n')
             for ix,i in enumerate(betaAll):
                 listInfo = [snp_id[ix], chr_id[ix], str(genPos[ix]), ref[ix], alt[ix]]
                 out.write('\t'.join(['%s' % x for x in listInfo]) + '\t' + '\t'.join(['%.4f' % x for x in list(i)]) + "\n")
