@@ -241,8 +241,10 @@ The true breeding values and the phenotypic values are provided in the file cont
 
 Keep the true genetic variances:
 ```{r}
-truth <- list("trait1"=list(Vu=var(pedDat[inds_gen0, "bv1"])),
-              "trait2"=list(Vu=var(pedDat[inds_gen0, "bv2"])))
+(truth <- list("trait1"=list(Vu_gen0=var(pedDat[inds_gen0, "bv1"]),
+                             Vu_not0=var(pedDat[inds_not0, "bv1"])),
+               "trait2"=list(Vu_gen0=var(pedDat[inds_gen0, "bv2"]),
+                             Vu_not0=var(pedDat[inds_not0, "bv2"]))))
 ```
 
 Visualize the phenotypic and breeding values:
