@@ -78,11 +78,13 @@ def saveLineage(pop, param):
 
 ## function to test the value of the parameters inputed
 ## if they do not correspond, then exit the simulation
-def testParameters(h2, h2_others, nTrait):
+def testParameters(h2, h2_others, nTrait, proportionQTLs):
     if h2 <= 0:
         sys.exit('Null heritability is not allowed')
     if len(h2_others) != (nTrait-1):
         sys.exit('Not enough heritabilities defined: each trait need to have a h2')
+    if (proportionQTLs > 1.0) or (proportionQTLs < 0.0):
+        sys.exit('the proportion of SNPs that are QTLs need to be between 0 - i.e. all SNPs are neutral - and 1 - i.e. all SNPs are QTLs')
     return True
 
 
@@ -105,25 +107,25 @@ if __name__ == '__main__':
     from simuPOP.utils import export
     from simuPOP.utils import Exporter
 
-    default = {'savedFolder' : "/home/eliset/Desktop/qlife_2025/test/default",
-               'optim' : 5,
-               'varW' : 10,
-               'h2': [0.5,0.9], ## can have multiple values if more than one trait; it's the first trait that will be selected for
+    default = {'savedFolder' : "default",
+               'optim' : 0,
+               'varW' : 100,
+               'h2': [0.5], ## can have multiple values if more than one trait; it's the first trait that will be selected for
                'G' : 10,
                'N' : 100,
                'Npop' : 10000,
-               'nTrait' : 2,
-               'nChr' : 5,
-               'Lchr' : 200,
+               'nTrait' : 1,
+               'nChr' : 1,
+               'Lchr' : 1000,
                'rho' : 1e-7,
+               'mu' : 1e-4,
                'proportionQTL' : 1.0,
-               'varEffect' : 1, ## variance of the distribution of QTL effects (suppose it's the same for all traits if multiple ones)
+               'varEffect' : 1.0, ## variance of the distribution of QTL effects (suppose it's the same for all traits if multiple ones)
                'corTrait': 0.5} ## correlation between the QTLs effects of the different traits; consider full pleiotropy (used only for ntrait > 1)
 
     ## rmk: the variance and covariance for the QTL effect is BEFORE the normalization by the phenotypic variance!!
 
     parameters = getopts(sys.argv, default)
-    
     
     ## set the seed for simupop and numpy random generator
     SEED = random.randint(0, 2 ** 32)
@@ -143,7 +145,7 @@ if __name__ == '__main__':
     ## test if h2 is a list
     ## if not, transform it in a list
     if not isinstance(parameters['h2'], list):
-        parameters['h2'] = [parameters['h2']]
+        parameters['h2'] = parameters['h2'].split(sep = ",")
 
     h2 = float(parameters['h2'][0])
     h2_others = [float(i) for i in parameters['h2'][1:]] ## heritabilities of the other traits; if nTrait = 1, then it will be empty
@@ -153,9 +155,7 @@ if __name__ == '__main__':
     propQTL = float(parameters['proportionQTL']) ## proportion of QTLs among the markers
     rho = float(parameters['rho']) ## if want free recombination, there will be one QTL per chromosome and Lchr = 1
     
-    mu = 0.1/Lchr
-    if Lchr == 1:
-        mu = 0.01
+    mu = float(parameters['mu']) ## mutation rate of the overlay of mutations after the coalescent burn-in phase
     
     
     varEffect = float(parameters['varEffect'])
@@ -168,7 +168,7 @@ if __name__ == '__main__':
         parameters['covTrait'] = covTrait  
 
 
-    testParameters(h2, h2_others, nTrait)
+    testParameters(h2, h2_others, nTrait, propQTL)
 
     if not os.path.exists(savedFolder):
         os.mkdir(savedFolder)
@@ -190,9 +190,20 @@ if __name__ == '__main__':
     ## add (neutral) mutations to a tree sequence
     mut_model = msprime.BinaryMutationModel() ## binary model to only have biallelic variants (0 or 1, 0 being the ancestral allele)
     genoList = np.empty(shape = 0)
+    variants = [] ## list of positions with variants
     for i, tchr in enumerate(ts):
         mts = msprime.sim_mutations(tchr, rate = mu, model = mut_model)
-        genoList = np.append(genoList, mts.genotype_matrix()) ## export the genotype matrix as a numpy array
+        var_mts = [var.position for var in mts.variants()]
+        variants.append(var_mts)
+        tmp = mts.genotype_matrix()
+        if len(var_mts) < Lchr: 
+            ## if there are less variants than the number of sites given as parameter
+            ## add sites that are fixed (allele 0 for all inds)
+            tmp = np.array([[0]*(2*N)]*Lchr) ## initialize the genotypes with only 0
+            tmp2 = mts.genotype_matrix()
+            for jx,jvar in enumerate(var_mts):
+                tmp[int(jvar)] = tmp2[jx] ## replace the sites that are polymorphic with their correct genotypes
+        genoList = np.append(genoList, tmp) ## export the genotype matrix as a numpy array
         ## mts.genotype_matrix() format: [chr1, ..., nChr]
         ## with chr = array([variant1, ..., variant Lchr])
         ## with variant = [ind1 homologous1, ind1 hom2, ..., indN hom1, indN hom2]
@@ -226,6 +237,11 @@ if __name__ == '__main__':
     alleles = np.array(['A', 'T', 'C', 'G'])
     ref = [random.choice(alleles) for i in range(L)]
     alt = [random.choice(alleles[alleles != ref[i]]) for i in range(L)]
+    
+    ## put NA instead of an alternative allele for the monomorphic sites
+    ## i.e. they do not have an alternative allele
+    ixVar = [int(k + i*Lchr) for i,j in enumerate(variants) for k in j] ## get the index of the variants in the concatenated list of alleles
+    alt = [k if i in ixVar else 'NA' for i,j in enumerate(alt) for k in j]
     
     ## genetic coordinates of each SNP
     ## consider a uniform recombination map, with the same recombination rate between all SNPs
