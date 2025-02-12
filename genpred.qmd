@@ -329,6 +329,8 @@ IBDs[1:3, 1:8]
 
 ## True IBD relationships
 
+TODO: see refs in Lee and Werf (2006)
+
 ### Function
 
 ```{r}
