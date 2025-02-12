@@ -135,7 +135,7 @@ When the estimates of the variance components are used, the so-called empirical 
 
 The additive genetic values of unphenotyped individuals can be predicted as long as their additive genetic relationships with phenotyped individuals are known (pedigree).
 
-TODO: add formula
+TODO: add formula (Henderson 1977, Searle et al 1992/2006, supp 1 of Lopez-Cruz 2021)
 
 ## Mendelian deviations
 
@@ -858,6 +858,17 @@ TODO
 # Analysis for both traits jointly
 
 TODO
+
+```{r}
+if(FALSE){
+  fit <- mmer(cbind(pheno1, pheno2) ~ 1,
+              random=~ vsr(),
+              rcov=~ vsr(units, Gtc=unsm(2)),
+              data=pedDat, nIters=10, verbose=FALSE)
+}
+```
+
+
 
 # Appendix
 
