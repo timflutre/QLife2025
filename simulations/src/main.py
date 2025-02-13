@@ -68,7 +68,7 @@ def saveLineage(pop, param):
     for ind in pop.individuals():
         lineage = ind.lineage()
         M = len(lineage) // 2
-        with open(savedFolder + '/IBD.txt', 'a') as f:
+        with open(savedFolder + '/IBD_allSites.txt', 'a') as f:
             towrite = lineage[:M]
             f.write(str(ind.ind_id) + '\thom1\t' + '\t'.join(['%d' % x for x in towrite]) + '\n')
             towrite = lineage[M:]
@@ -315,7 +315,7 @@ if __name__ == '__main__':
     ## thus, we will standardize the beta by the realized phenotypic standard deviation (ie sqrt(varA/h2))
     if nTrait == 1:
         beta = [i  / np.sqrt(varA/h2) for i in beta]
-        with open(savedFolder + "/SNP_INFO.txt", "w") as out:
+        with open(savedFolder + "/SNP_INFO_allSites.txt", "w") as out:
             out.write("snp_id\tchr_id\tgen_pos\tREF\tALT\tbeta_trait_1" + '\n')
             for ix,i in enumerate(beta):
                 listInfo = [snp_id[ix], chr_id[ix], str(genPos[ix]), ref[ix], alt[ix]]
@@ -325,7 +325,7 @@ if __name__ == '__main__':
         betaAll = betaAll / np.sqrt(varA/h2)
         beta = [i[0] for i in betaAll]
         ## if more than one trait, divide all betas by realized varP 
-        with open(savedFolder + "/SNP_INFO.txt", "w") as out:
+        with open(savedFolder + "/SNP_INFO_allSites.txt", "w") as out:
             out.write("snp_id\tchr_id\tgen_pos\tREF\tALT\t" + '\t'.join(['beta_trait_' + str(i+1) for i in range(nTrait)]) + '\n')
             for ix,i in enumerate(betaAll):
                 listInfo = [snp_id[ix], chr_id[ix], str(genPos[ix]), ref[ix], alt[ix]]
@@ -356,11 +356,11 @@ if __name__ == '__main__':
     # sim.dump(pop, ancGens = sim.ALL_AVAIL, output = ">>" + savedFolder + "/initialPop.txt")
     
     ## save the header of the genotype file
-    with open(savedFolder + "/genotype.txt", "w") as f:
+    with open(savedFolder + "/genotype_allSites.txt", "w") as f:
         f.write("ind_id" + '\t' + '\t'.join(['%s' %x for x in snp_id]) + '\n')
 
     ## save the header of the IBD file
-    with open(savedFolder + "/IBD.txt", "w") as f:
+    with open(savedFolder + "/IBD_allSites.txt", "w") as f:
         f.write("ind_id\thomologous_chr" + '\t' + '\t'.join(['%s' %x for x in snp_id]) + '\n')
 
     ## evolution of the population
@@ -371,7 +371,7 @@ if __name__ == '__main__':
             sim.PedigreeTagger(outputFields = ['gen', 'phenotype', 'breedingValue'], output='>>' + savedFolder + '/pedigree.txt'), ## will need the first generation for the randomization
             sim.Stat(alleleFreq = sim.ALL_AVAIL, popSize = True),
             sim.PyOperator(saveLineage, param = [savedFolder]),
-            Exporter(format = "csv", output = '>>' + savedFolder + '/genotype.txt', infoFields = ["ind_id"], header = False, genoFormatter = {(0,0):0, (0,1):1, (1,0):1, (1,1):2}, sexFormatter = None, affectionFormatter = None, delimiter = "\t"),
+            Exporter(format = "csv", output = '>>' + savedFolder + '/genotype_allSites.txt', infoFields = ["ind_id"], header = False, genoFormatter = {(0,0):0, (0,1):1, (1,0):1, (1,1):2}, sexFormatter = None, affectionFormatter = None, delimiter = "\t"),
         ],
         preOps = [
             sim.PySelector(func = selModel.fitness),
@@ -400,7 +400,7 @@ if __name__ == '__main__':
             ## as a function of the population size
             sim.PyExec("varA = varA*(1 - 0.5/N)"),
             sim.PyOperator(saveLineage, param = [savedFolder]),
-            Exporter(format = "csv", output = '>>' + savedFolder + '/genotype.txt', infoFields = ["ind_id"], header = False, genoFormatter = {(0,0):0, (0,1):1, (1,0):1, (1,1):2}, sexFormatter = None, affectionFormatter = None, delimiter = "\t"),
+            Exporter(format = "csv", output = '>>' + savedFolder + '/genotype_allSites.txt', infoFields = ["ind_id"], header = False, genoFormatter = {(0,0):0, (0,1):1, (1,0):1, (1,1):2}, sexFormatter = None, affectionFormatter = None, delimiter = "\t"),
         ],
         gen = G
     )
@@ -419,7 +419,7 @@ if __name__ == '__main__':
     ## each trait will have a different heritability
     ## need the genotype matrix
     if nTrait > 1:
-        geno = np.loadtxt(savedFolder + '/genotype.txt', skiprows = 1)
+        geno = np.loadtxt(savedFolder + '/genotype_allSites.txt', skiprows = 1)
         bv = []
         pheno = []
         for i in range(nTrait-1):
@@ -468,7 +468,68 @@ if __name__ == '__main__':
 
     ## remove the - now useless - fitness file
     os.remove(savedFolder + '/fitness.txt')
-
+    
+    ## remove the fixed sites from SNP_INFO.txt, IBD.txt and genotype.txt
+    ## still keep the files with all sites ?
+    sites = []
+    header_sites = []
+    with open(savedFolder + '/SNP_INFO_allSites.txt', 'r') as f:
+        for ix, i in enumerate(f):
+            iline = i.split('\n')[0].split('\t')
+            if ix == 0:
+                header_sites.append(iline)
+            else:
+                sites.append(iline)
+    
+    geno = []
+    header_geno = []
+    with open(savedFolder + '/genotype_allSites.txt', 'r') as f:
+        for ix, i in enumerate(f):
+            iline = i.split('\n')[0].split('\t')
+            if ix == 0:
+                header_geno.append(iline)
+            else:
+                geno.append(iline)
+                
+    ibd = []
+    header_ibd = []
+    with open(savedFolder + '/IBD_allSites.txt', 'r') as f:
+        for ix, i in enumerate(f):
+            iline = i.split('\n')[0].split('\t')
+            if ix == 0:
+                header_ibd.append(iline)
+            else:
+                ibd.append(iline)
+    
+    sites = np.array(sites)
+    geno = np.array(geno)
+    ibd = np.array(ibd)
+    header_ibd = np.array(header_ibd)
+    fixed = np.where(sites[:, 4] == 'NA')[0]
+    
+    snp = np.delete(sites, fixed, axis = 0)
+    genoSNP = np.delete(geno, fixed + 1, axis = 1) ## the first column = ind id
+    ibdSNP = np.delete(ibd, fixed + 2, axis = 1) ## the first column = ind id, the second one = homologous chromosome
+    header_genoSNP = np.delete(header_geno, fixed + 1, axis = 1) ## the first column = ind id
+    header_ibdSNP = np.delete(header_ibd, fixed + 2, axis = 1) ## the first column = ind id
+    
+    ## save the information about the SNPs only
+    with open(savedFolder + '/SNP_INFO.txt', 'w') as f:
+        f.write('\t'.join(['%s' %x for x in header_sites[0]]) + '\n')
+        for i in snp:
+            f.write('\t'.join(i) + '\n')
+    
+    with open(savedFolder + '/genotype.txt', 'w') as f:
+        f.write('\t'.join(['%s' %x for x in header_genoSNP[0]]) + '\n')
+        for i in genoSNP:
+            f.write('\t'.join(i) + '\n')
+    
+    with open(savedFolder + '/IBD.txt', 'w') as f:
+        f.write('\t'.join(['%s' %x for x in header_ibdSNP[0]]) + '\n')
+        for i in ibdSNP:
+            f.write('\t'.join(i) + '\n')
+        
+        
 
 
 
