@@ -1,45 +1,198 @@
 ---
-title: "Genom-wide association study for quantitative traits"
-author: "E. Tourrette, T. Flutre, B. Servin"
+title: "Genome-wide association study for quantitative traits"
+author: "Elise Tourrette, Timothée Flutre, Bertrand Servin"
+date: "March 12, 2025"
 format:
   html:
     toc: true
     toc-depth: 2
-    toc-location: left
+    toc-location: right
     number-sections: true
 editor: visual
 ---
 
+```{r echo=FALSE}
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(ggbeeswarm))
+```
 
 # Main objective
 
-The goal of this session is to show how to answer the question "how to identify QTLs and estimate their effects?".
+Studying the **genetic architecture** of complex (quantitative) traits aims at
+**idenfitying polymorphisms** (number, genomic locations, effects) affecting the 
+phenotypic differences between individuals. 
 
+This can help to:
 
+- understand the biological processes underlying phenotypes
+- predict individual genetic values (diagnostic, selection ...)
+- separate out genetics from environmental effects
 
-# First approach: SNP-by-SNP
+Before the 2000's, this was done thourgh **linkage analysis**, studying segregation of alleles in families. This approach although robust,
+was clearly limited in particular due to its lack of power, see [Risch and Merichangas (1996)](https://science.sciencemag.org/content/273/5281/1516). 
 
-```{r}
-2+2
+A more powerful approach consists in sampling *unrelated* individuals from a 
+general population and test for **association** between individual genotypes and
+their phenotypes = GWAS. 
+
+```{r message=FALSE}
+## Sample Size
+N <- 200
+## QTL parameters: allele frequency and effect
+f <- 0.2
+beta <- 1
+## sample genotypes
+G <- rbinom(N, 2, f)
+Y <- rnorm(N, mean = G * beta)
+ggplot(tibble(G = G, Y = Y), aes(x = G, y = Y)) +
+  geom_beeswarm() +
+  theme_minimal() +
+  geom_smooth(method = "lm") +
+  xlab("Genotype") +
+  ylab("Phenotype")
 ```
 
-
-# Second approach: joint multi-SNP
-
-```{r}
-2+2
-```
-
-
-# Third approach: multiple responses
+The effect of the marker on the phenotype can be estimated by a simple linear model
 
 ```{r}
-2+2
+mod <- lm(Y ~ G)
+summary(mod)
 ```
 
+Although this appears simple enough, devil is in the details, and today we will
+be looking into how to deal with them in order to perform a robust yet powerful
+GWAS.
 
-# Appendix
+# Testing for association with a single QTL
+
+## Linkage Disequilibrium and Marker Density
+
+Because we work with samples of unrelated individuals, the ability to detect 
+QTLs relies on the **Linkage Disequilibrium** between genotyped loci (markers) and
+acutal QTLs. Indeed, if the genotype correlation between marker and QTL is *r*,
+the power to detect the QTL with the marker decreases with **$r^2$**. 
+So one of the most important factor affecting the power of a GWAS is the **marker density**. 
+
+We will illustrate this by performing a simple GWAS on two datasets of different
+density
+
+### low density GWAS
 
 ```{r}
-print(sessionInfo(), locale=FALSE)
+## Simulate a dataset with 200 markers per chromosome, one of which is a QTL
+
+## test for association between markers and QTLs with a simple linear regression
+## use broom ?
 ```
+
+**If you had not included the QTL in your analysis, would you have found it ?** 
+
+### High density GWAS
+
+```{r}
+## Simulate a dataset with 20000 markers per chromosome, one of which is a QTL
+
+## test for association between markers and QTLs with a simple linear regression
+```
+
+**If you had not included the QTL in your analysis, would you have found it ?** 
+
+
+Generally, your study system will come with its available genotyping tools. These 
+will constrain the marker density of your GWAS. In addition to genotyping and
+sequencing techniques (RADseq, Low pass sequencing ...), statistical methods
+can be used to improve marker density: **genotype imputation methods**. We will
+not cover them in this practical, but know that if you have sufficiently large
+diversity panels for your species, these methods can greatly increase power
+of GWAS by predicting the genotype of individuals for large number of known markers.
+
+## Multiple testing
+
+By increasing the number of markers assessed for association, we increase the 
+number of statistical tests. In order to call significant associations we need 
+to account for this multiple testing. 
+
+The simplest way to control for multiple testing is to control the Family Wise 
+Error Rate (FWER) by the Bonferroni procedure. The FWER is the probability that
+one of the test deemed significant is a false positive. For a single test, this
+is simply the associated p-value ($p$). So if you want to control the FWER at level
+$\alpha$, you will call your single test significant if $p \leq \alpha$. 
+
+**Add a note on the null distribution of p-values**
+However, if you perform $n$ independant statistical test, you want to control
+the FWER with the same level $\alpha$, you need to adjust your threshold for 
+each of the $n$ tests. One procedure to do this is the so-called Bonferroni
+procedure, which corresponds to setting the significance threshold at $\alpha/n$.
+So for example if you want to control FWER at $\alpha=0.05$ and perform 1 million
+tests for association, you should only reject tests that have a pvalue less 
+than $0.05 \times 10^{-6} = 5.10^{-8}$
+
+Implement the Bonferroni procedure on your GWAS results, how many SNPs can 
+you call significant ?
+
+```{r}
+## Implement the Bonferronie procedure on the GWAS results
+```
+
+One problem with the Bonferroni procedure is that it is **conservative**, in 
+particular in the presence of correlated tests. One way to avoid this is to
+perform random **permutations** of the genotype / phenotype associations. This
+effectively simulates data under the null (no association between phenotype and
+genotype) and allows to account both for multiple testing and correlation between
+tests. 
+
+```{r}
+## assess significance via permutations
+```
+
+## Population structure
+
+Until now, we have assumed (and simulated) individuals that come from a random
+mating population of constant size with no selection or migration. In this ideal
+situation all individuals are essentially exchangeable and we have no factors 
+counfounding the association between genotype and phenotype.
+
+Unfortunately, almost no real world scenario fits this situation. So one has to
+account for **population structure** when performing a GWAS. There are several
+ways to do it, we will see one in this section and another one in the next. 
+
+First, let's run some new simulations where our initial panmictic populations is
+subjected to selection (**ADD DETAILS ON THE SIMULATIONS HERE**) and see the 
+consequences on our GWAS results.
+
+```{r}
+## RUN simulations with selection
+
+## Runt he lm GWAS
+
+## Look at the results
+```
+
+- Run the GWAS (using lm) on individuals from the last generation of the dataset
+- Using the Bonferroni procedure, how many SNPs would be called significant ?
+- Plot the distribution of p-values ? Compare it to the distribution of p-values
+in the GWAS in the random mating population. What do you see ? 
+
+**Population structure** can be caused by many processes, including selection,
+isolation-by-distance, barriers to gene flow, assortative mating ... It will
+create false positives in GWAS if not accounted for properly.
+
+To account for populations structure, the simplest method is to use Principal
+Component Analysis of the genotype matrix to reveal axes of genetic structuration.
+We can then include the main PCs as regressors in the GWAS model
+
+```{r}
+## Perform a PCA on the genotype matrix
+
+## looking at Eigen Values, decide on a number of component to include
+
+## add these components in the lm
+```
+
+- Run the GWAS (using lm + PC covariates) on individuals from the last 
+generation of the dataset
+- Using the Bonferroni procedure, how many SNPs would be called significant ?
+- Plot the distribution of p-values ? Compare it to the distribution of p-values
+in the GWAS without PC correction. What happened ? 
+
+# Multiple QTLs
