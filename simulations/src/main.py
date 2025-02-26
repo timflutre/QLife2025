@@ -87,8 +87,6 @@ def testParameters(h2, h2_others, nTrait, prop0, nQTLChr, Lchr, varEffect0):
         sys.exit('the proportion of SNPs that are from another distribution need to be between 0 - i.e. all SNPs are either QTLs with effects from the same distribution or neutral - and 1 - i.e. all SNPs have an effect from a gaussian distribution with variance varEffect0')
     if (nQTLChr + round(prop0*(Lchr-nQTLChr))) > Lchr:
         sys.exit('cannot have more QTLs than sites')
-    if (nTrait > 1) and (prop0 > 0.0) and (varEffect0 != 0.0):
-        sys.exit('cannot have two distribution of effects with more than one traits - if the second distribution has effects other than null effects i.e. varEffect0 = 0')
     return True
 
 
@@ -175,7 +173,15 @@ if __name__ == '__main__':
         for i in range(nTrait):
             covTrait.append([corTrait * varEffect**2]*nTrait)
             covTrait[i][i] = varEffect
-        parameters['covTrait'] = covTrait  
+        parameters['covTrait'] = covTrait
+        ## for the other distribution of effects
+        covTrait0 = []
+        for i in range(nTrait):
+            if varEffect0 == 0.0:
+                corTrait = 0.0
+            covTrait0.append([corTrait * varEffect0**2]*nTrait)
+            covTrait0[i][i] = varEffect0
+        parameters['covTrait0'] = covTrait0   
 
 
     testParameters(h2, h2_others, nTrait, prop0, nQTLChr, Lchr, varEffect0)
@@ -300,14 +306,18 @@ if __name__ == '__main__':
                 beta[ix] = beta0[ix]
     
     if nTrait > 1:
-        ## !!! HAVING TWO DIFFERENT DISTRIBUTIONS DOESN4T WORK IN THIS CASE, EXCEPT IF VAREFFECT0 = 0
         ## if there are more than one trait, use a multivariate normal to define correlated beta
         ## use the betas of the first trait (arbitrary decision) to calculate the trait that will be used to define the fitness in simuPOP
         ## to not calculate the breeding value and the phenotype of the other traits (can be calculated as posteriori as we have the betas)
+        ## in the case there are two different distribution for the QTLs effects:
+        ## there will also be two distribution for the other traits (consider full pleiotropy)
         betaAll = multivariate_normal.rvs(size = L, mean = [0]*nTrait, cov = covTrait)
+        betaAll0 = multivariate_normal.rvs(size = L, mean = [0]*nTrait, cov = covTrait0)
         for ix,i in enumerate(qtl):
-            if (i == 0) or (i == 2):
+            if i == 0:
                 betaAll[ix] = 0.0
+            if i == 2: 
+                betaAll[ix] = betaAll0[ix]
         ## to define the trait associated in simupop, use the first trait
         beta = [i[0] for i in betaAll]
     
