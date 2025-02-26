@@ -78,7 +78,7 @@ def saveLineage(pop, param):
 
 ## function to test the value of the parameters inputed
 ## if they do not correspond, then exit the simulation
-def testParameters(h2, h2_others, nTrait, prop0, nQTLChr, Lchr):
+def testParameters(h2, h2_others, nTrait, prop0, nQTLChr, Lchr, varEffect0):
     if h2 <= 0:
         sys.exit('Null heritability is not allowed')
     if len(h2_others) != (nTrait-1):
@@ -87,7 +87,7 @@ def testParameters(h2, h2_others, nTrait, prop0, nQTLChr, Lchr):
         sys.exit('the proportion of SNPs that are from another distribution need to be between 0 - i.e. all SNPs are either QTLs with effects from the same distribution or neutral - and 1 - i.e. all SNPs have an effect from a gaussian distribution with variance varEffect0')
     if (nQTLChr + round(prop0*(Lchr-nQTLChr))) > Lchr:
         sys.exit('cannot have more QTLs than sites')
-    if (nTrait > 1) and (prop0 >= 0) and (varEffect != 0):
+    if (nTrait > 1) and (prop0 > 0.0) and (varEffect0 != 0.0):
         sys.exit('cannot have two distribution of effects with more than one traits - if the second distribution has effects other than null effects i.e. varEffect0 = 0')
     return True
 
@@ -178,7 +178,7 @@ if __name__ == '__main__':
         parameters['covTrait'] = covTrait  
 
 
-    testParameters(h2, h2_others, nTrait, prop0, nQTLChr, Lchr)
+    testParameters(h2, h2_others, nTrait, prop0, nQTLChr, Lchr, varEffect0)
 
     if not os.path.exists(savedFolder):
         os.mkdir(savedFolder)
