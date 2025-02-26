@@ -78,13 +78,17 @@ def saveLineage(pop, param):
 
 ## function to test the value of the parameters inputed
 ## if they do not correspond, then exit the simulation
-def testParameters(h2, h2_others, nTrait, proportionQTLs):
+def testParameters(h2, h2_others, nTrait, prop0, nQTLChr, Lchr):
     if h2 <= 0:
         sys.exit('Null heritability is not allowed')
     if len(h2_others) != (nTrait-1):
         sys.exit('Not enough heritabilities defined: each trait need to have a h2')
-    if (proportionQTLs > 1.0) or (proportionQTLs < 0.0):
-        sys.exit('the proportion of SNPs that are QTLs need to be between 0 - i.e. all SNPs are neutral - and 1 - i.e. all SNPs are QTLs')
+    if (prop0 > 1.0) or (prop0 < 0.0):
+        sys.exit('the proportion of SNPs that are from another distribution need to be between 0 - i.e. all SNPs are either QTLs with effects from the same distribution or neutral - and 1 - i.e. all SNPs have an effect from a gaussian distribution with variance varEffect0')
+    if (nQTLChr + round(prop0*(Lchr-nQTLChr))) > Lchr:
+        sys.exit('cannot have more QTLs than sites')
+    if (nTrait > 1) and (prop0 >= 0) and (varEffect != 0):
+        sys.exit('cannot have two distribution of effects with more than one traits - if the second distribution has effects other than null effects i.e. varEffect0 = 0')
     return True
 
 
@@ -116,11 +120,13 @@ if __name__ == '__main__':
                'Npop' : 10000,
                'nTrait' : 1,
                'nChr' : 1,
+               'nQTLChr' : 1, ## number of QTLs per chromosome (whose effect is drawn from N(0,varEffect))
                'Lchr' : 1000,
-               'rho' : 1e-7,
+               'LG' : 100, ## genetic length of one chromosome, in cM
                'mu' : 1e-4,
-               'proportionQTL' : 1.0,
+               'proportion0' : 0.0, ## proportion of QTLs with an effect from a different distribution (effect drawn from N(0,varEffect0))
                'varEffect' : 1.0, ## variance of the distribution of QTL effects (suppose it's the same for all traits if multiple ones)
+               'varEffect0' : 0.0, ## consider that we can have two distributioin for the QTLs effects; if this variance is zero then these effects are 0 (neutral sites) -> controlled by proportion0
                'corTrait': 0.5} ## correlation between the QTLs effects of the different traits; consider full pleiotropy (used only for ntrait > 1)
 
     ## rmk: the variance and covariance for the QTL effect is BEFORE the normalization by the phenotypic variance!!
@@ -129,6 +135,7 @@ if __name__ == '__main__':
     
     ## set the seed for simupop and numpy random generator
     SEED = random.randint(0, 2 ** 32)
+    SEED = 1234
     random.seed(SEED)
     sim.setRNG(seed = SEED)
 
@@ -151,13 +158,16 @@ if __name__ == '__main__':
     h2_others = [float(i) for i in parameters['h2'][1:]] ## heritabilities of the other traits; if nTrait = 1, then it will be empty
     nTrait = int(parameters['nTrait'])
     nChr = int(parameters['nChr']) ## the chromosomes are independant
+    nQTLChr = int(parameters['nQTLChr']) ## number of QTLs per chromosome // consider that all chromosomes have the same number of QTLs
     Lchr = int(parameters['Lchr']) ## Lchr = sequence length (number of sites), per chromosome // consider that all chromosomes have the same number of sites
-    propQTL = float(parameters['proportionQTL']) ## proportion of QTLs among the markers
-    rho = float(parameters['rho']) ## if want free recombination, there will be one QTL per chromosome and Lchr = 1
+    prop0 = float(parameters['proportion0']) ## proportion of markers drawn from N(0, varEffect0) among the markers; if varEffect0 -> these are neutral
+    LG = float(parameters['LG'])/100 ## genetic length, in M, of each chromosome
+    rho = LG / Lchr ## in M/bp/generation; if want free recombination, there will be one QTL per chromosome and Lchr = 1
     
     mu = float(parameters['mu']) ## mutation rate of the overlay of mutations after the coalescent burn-in phase
     
     
+    varEffect0 = float(parameters['varEffect0'])   
     varEffect = float(parameters['varEffect'])
     if nTrait > 1:
         corTrait = float(parameters['corTrait'])
@@ -168,7 +178,7 @@ if __name__ == '__main__':
         parameters['covTrait'] = covTrait  
 
 
-    testParameters(h2, h2_others, nTrait, propQTL)
+    testParameters(h2, h2_others, nTrait, prop0, nQTLChr, Lchr)
 
     if not os.path.exists(savedFolder):
         os.mkdir(savedFolder)
@@ -259,32 +269,45 @@ if __name__ == '__main__':
     ## consider that all chromosomes have the same number of QTLs
     ## that are randomly placed along the chromosomes
     if Lchr >= 10:
-        Lqtl = round(propQTL*Lchr) ## number of QTL per chromosome
-        qtl = [random.sample([0]*(Lchr-Lqtl) + [1]*Lqtl, Lchr) for i in range(nChr)] ## 0 = neutral sites, 1 = QTL
+        L0 = round(prop0*(Lchr-nQTLChr)) ## number of QTL drawn from distribution 0 (varEffect0) per chromosome (proportion of the total number of sites, minus the QTLs from the other distribution)
+        qtl = [random.sample([0]*(Lchr-(L0+nQTLChr)) + [1]*nQTLChr + [2]*L0, Lchr) for i in range(nChr)] ## 0 = neutral sites, 1 = QTL, 2 = QTL second distribution of effects
+        ## if the number of QTLs is 1
+        ## force the QTL to be at a SNP
+        if nQTLChr == 1:
+            qtl = [random.sample([0]*(Lchr-L0)+ [2]*L0, Lchr) for i in range(nChr)]
+            for ichr in range(nChr):
+                qtl[ichr][int(random.choice(variants[ichr]))] = 1
         qtl = [j for i in qtl for j in i]
     
     ## if there are less than 10 markers per chromosome 
     ## consider all chromosomes together
     ## (if less than 10, then the proportion of QTLs cannot be correctly represented on a per-chromosome basis)
     if Lchr < 10:
-        Lqtl = round(propQTL*L)
-        qtl = random.sample([0]*(L-Lqtl) + [1]*Lqtl, L)
+        L0 = round(prop0*(L-nQTLChr*Lchr))
+        qtl = random.sample([0]*(L-(L0+nQTLChr)) + [1]*nQTLChr*Lchr + [2]*L0, L)
+        ## !! NEED TO ADD CONDITIONS TO CHECK THAT THE QTL IS AT A SNP IF nQTL = 1
     
     ## consider that all the variants can be QTLs
     ## with a given distribution of effect (normal distribution?)
     ## rmk: to define beta, it must not have been defined previously (in the specific scenario)
     if nTrait == 1: 
         beta = list(norm.rvs(size = L, loc = 0, scale = np.sqrt(varEffect)))
+        beta0 = list(norm.rvs(size = L, loc = 0, scale = np.sqrt(varEffect0)))
         for ix,i in enumerate(qtl):
-            beta[ix] = i*beta[ix] ## if the marker ix is neutral then i = 0 and thus, its effect will be 0, hence it will be the one previously drawn
+            if i == 0:
+                beta[ix] = 0.0
+            if i == 2:
+                beta[ix] = beta0[ix]
     
     if nTrait > 1:
+        ## !!! HAVING TWO DIFFERENT DISTRIBUTIONS DOESN4T WORK IN THIS CASE, EXCEPT IF VAREFFECT0 = 0
         ## if there are more than one trait, use a multivariate normal to define correlated beta
         ## use the betas of the first trait (arbitrary decision) to calculate the trait that will be used to define the fitness in simuPOP
         ## to not calculate the breeding value and the phenotype of the other traits (can be calculated as posteriori as we have the betas)
         betaAll = multivariate_normal.rvs(size = L, mean = [0]*nTrait, cov = covTrait)
         for ix,i in enumerate(qtl):
-                betaAll[ix] = i*betaAll[ix]
+            if (i == 0) or (i == 2):
+                betaAll[ix] = 0.0
         ## to define the trait associated in simupop, use the first trait
         beta = [i[0] for i in betaAll]
     
@@ -319,7 +342,7 @@ if __name__ == '__main__':
             out.write("snp_id\tchr_id\tgen_pos\tREF\tALT\tbeta_trait_1" + '\n')
             for ix,i in enumerate(beta):
                 listInfo = [snp_id[ix], chr_id[ix], str(genPos[ix]), ref[ix], alt[ix]]
-                out.write('\t'.join(['%s' % x for x in listInfo]) + '\t' + str(i+1) + "\n")
+                out.write('\t'.join(['%s' % x for x in listInfo]) + '\t' + str(i) + "\n")
     
     if nTrait > 1:
         betaAll = betaAll / np.sqrt(varA/h2)
@@ -529,7 +552,7 @@ if __name__ == '__main__':
         for i in ibdSNP:
             f.write('\t'.join(i) + '\n')
         
-        
+    print('simulation ' + savedFolder + ' done')
 
 
 
