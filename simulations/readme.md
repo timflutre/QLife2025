@@ -45,12 +45,15 @@ The parameters that can be changed are the following (default value and expected
 - h2 ([0.5]; float): heritability (need to have more than one element in nTrait > 1; only the first trait will be under selection; full pleiotropy between the trait; cannot be <= 0)                         
 - nTrait (1; integer): number of traits                             
 - nChr (1; integer): number of chromosomes                               
-- Lchr (1000; integer): number of sites per chromosome                       
-- rho (1e-7; float): recombination rate (per site)
+- Lchr (1000; integer): number of sites per chromosome
+- nQTLChr (1; integer): number of QTLs per chromosome
+- LG (100; float): genetic length of each chromosome, in cM (recombination rate rho = 0.01*LG / Lchr)
 - mu (1e-4; float): mutation rate (per site)
-- proportionQTL (1.0; float): proportion of the SNPs that are QTLs (need to be between 0 and 1)
-- varEffect (1.0; float): variance of the distribution of the QTL effects
-- corTrait (0.5; float): correlation between the effect of two trait                         
+- proportion0 (0.0; float): proportion of the SNPs (Lchr - nQTLChr) with an effect drawn from another distribution
+- varEffect (1.0; float): variance of the distribution of the QTL effects (those controlled by the parameter nQTLChr)
+- varEffect0 (0.0; float): variance of the distribution of the QTL effects (those controlled by the parameter proportion0)
+- corTrait (0.5; positive float): correlation between the effect of two trait    
+- signCor (pos; string): sign of the correlation between the two traits (either 'pos' or 'neg') 
 
 Some remarks on the parameters:
 - the heritability must be > 0
@@ -58,7 +61,7 @@ Some remarks on the parameters:
 - if nTrait > 1, then only the first trait will be under selection
 - we consider full pleiotropy between the traits: if a QTL has an effect for one trait, it will have an effect for the other traits (similarly, a neutral site will be neutral for all traits)
 - if we want no LD between two markers, put them in two different chromosomes
-- the parameter is only relevant when nTrait > 1. Note that, if there are more than 2 traits and do not want the same correlation between the effects of the different trait, need to directly modify the variance-covariance matrix in the script
+- the parameter corTrait is only relevant when nTrait > 1. Note that, if there are more than 2 traits and do not want the same correlation between the effects of the different trait, need to directly modify the variance-covariance matrix in the script
 - if the mutation rate is too low, we may have less variants (polymorphic sites) than Lchr, after the overlay of mutations on the tree (coalescent burn-in phase). In this case, we have added monomorphic (fixed) sites to have the total number of sites equal to Lchr per chromosome. Note that these sites have alternative alleles = NA
 
 Example of usage with parameters (used to generate the example data): 
@@ -66,32 +69,50 @@ Example of usage with parameters (used to generate the example data):
 python QLife2025/simulations/src/main.py -savedFolder 'example_data_1' -optim 5 -varW 1 -nTrait 2 -h2 0.5,0.9 -nChr 5 -Lchr 200 -rho 0.005
 ```
 
-Some more examples of simulation of specific situations:                                     
-- no selection 
-```
-python QLife2025/simulations/src/main.py -savedFolder 'example_data_1' -optim 0 -varW 100  
-```
+Some more examples of simulation of specific situations (will be used in the workshops:
 
-- selection
 ```
-python QLife2025/simulations/src/main.py -savedFolder 'example_data_2' -optim 5 -varW 1  
-```
+## genomic prediction workshop
 
-- no linkage (free recombination): put one site per chromosome
-```
-python QLife2025/simulations/src/main.py -savedFolder 'example_data_3' -nChr 1000 -Lchr 1  
-```
+## no selection over the generations...
 
-- two traits (each with their own heritability)
-```
-python QLife2025/simulations/src/main.py -savedFolder 'example_data_4' -nTrait 2 -h2 0.5,0.9
-```
+# linkage; polygenic trait
+python ../QLife2025/simulations/src/main.py -savedFolder 'genpred_simu1' -nQTLChr 1000 -Lchr 1000 -LG 100 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5,0.9 -G 10 -N 100 -Npop 10000 -nTrait 2 -corTrait 0.9 -signCor 'neg' -nChr 5 -mu 1e-5 >> out_genpred & 
 
-- only 10% of the sites are QTLs
-```
-python QLife2025/simulations/src/main.py -savedFolder 'example_data_5' -proportionQTL 0.1
-```
+# no linkage; polygenic trait
+python ../QLife2025/simulations/src/main.py -savedFolder 'genpred_simu2' -nQTLChr 1 -Lchr 1 -LG 100 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5,0.9 -G 10 -N 100 -Npop 10000 -nTrait 2 -corTrait 0.9 -signCor 'neg' -nChr 1000 -mu 1e-5 >> out_genpred & 
 
+# linkage; trait with a few major QTLs
+python ../QLife2025/simulations/src/main.py -savedFolder 'genpred_simu3' -nQTLChr 10 -Lchr 1000 -LG 100 -varEffect 100.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5,0.9 -G 10 -N 100 -Npop 10000 -nTrait 2 -corTrait 0.9 -signCor 'neg' -nChr 5 -mu 1e-5 >> out_genpred & 
+
+# no linkage; trait with a few major QTLs
+python ../QLife2025/simulations/src/main.py -savedFolder 'genpred_simu4' -nQTLChr 0 -Lchr 1 -LG 100 -varEffect 1.0 -proportion0 0.01 -varEffect0 100.0 -optim 0 -varW 100 -h2 0.5,0.9 -G 10 -N 100 -Npop 10000 -nTrait 2 -corTrait 0.9 -signCor 'neg' -nChr 1000 -mu 1e-5 >> out_genpred & 
+
+
+## GWAS workshop
+
+# A. genetic model = 1 QTL + neutral markers
+
+# if no / small amount of LD between QTL and SNPs
+python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu1' -nQTLChr 1 -Lchr 1001 -LG 100 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &  
+
+# if LD between QTL and SNPs
+python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu2' -nQTLChr 1 -Lchr 10001 -LG 100 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
+
+# with population structure 
+python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu3' -nQTLChr 1 -Lchr 10001 -LG 100 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 0.1 -h2 0.5 -G 10 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
+
+# B. multiple QTLs
+
+# QTLs + neutral SNPs
+python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu4' -nQTLChr 10 -Lchr 10010 -LG 100 -varEffect 100.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
+
+python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu4b' -nQTLChr 10 -Lchr 10010 -LG 100 -varEffect 100.0 -proportion0 1.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
+
+# some QTLs with large effects + QTLs with weak effects + neutral SNPs
+python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu5' -nQTLChr 10 -Lchr 10010 -LG 100 -varEffect 100.0 -proportion0 0.1 -varEffect0 0.01 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
+
+```
 
 
 ### Outputs     
