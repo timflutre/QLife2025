@@ -171,7 +171,7 @@ if __name__ == '__main__':
         corTrait = float(parameters['corTrait'])
         covTrait = []
         for i in range(nTrait):
-            covTrait.append([corTrait * varEffect**2]*nTrait)
+            covTrait.append([corTrait * varEffect]*nTrait)
             covTrait[i][i] = varEffect
         parameters['covTrait'] = covTrait
         ## for the other distribution of effects
@@ -179,7 +179,7 @@ if __name__ == '__main__':
         for i in range(nTrait):
             if varEffect0 == 0.0:
                 corTrait = 0.0
-            covTrait0.append([corTrait * varEffect0**2]*nTrait)
+            covTrait0.append([corTrait * varEffect0]*nTrait)
             covTrait0[i][i] = varEffect0
         parameters['covTrait0'] = covTrait0   
 
