@@ -78,7 +78,7 @@ def saveLineage(pop, param):
 
 ## function to test the value of the parameters inputed
 ## if they do not correspond, then exit the simulation
-def testParameters(h2, h2_others, nTrait, prop0, nQTLChr, Lchr, varEffect0):
+def testParameters(h2, h2_others, nTrait, prop0, nQTLChr, Lchr, varEffect0, signCor):
     if h2 <= 0:
         sys.exit('Null heritability is not allowed')
     if len(h2_others) != (nTrait-1):
@@ -87,6 +87,8 @@ def testParameters(h2, h2_others, nTrait, prop0, nQTLChr, Lchr, varEffect0):
         sys.exit('the proportion of SNPs that are from another distribution need to be between 0 - i.e. all SNPs are either QTLs with effects from the same distribution or neutral - and 1 - i.e. all SNPs have an effect from a gaussian distribution with variance varEffect0')
     if (nQTLChr + round(prop0*(Lchr-nQTLChr))) > Lchr:
         sys.exit('cannot have more QTLs than sites')
+    if (signCor != 'pos') and (signCor != 'neg'):
+        sys.exit('the sign of the correlation between two traits can either pos or neg')
     return True
 
 
@@ -125,7 +127,8 @@ if __name__ == '__main__':
                'proportion0' : 0.0, ## proportion of QTLs with an effect from a different distribution (effect drawn from N(0,varEffect0))
                'varEffect' : 1.0, ## variance of the distribution of QTL effects (suppose it's the same for all traits if multiple ones)
                'varEffect0' : 0.0, ## consider that we can have two distributioin for the QTLs effects; if this variance is zero then these effects are 0 (neutral sites) -> controlled by proportion0
-               'corTrait': 0.5} ## correlation between the QTLs effects of the different traits; consider full pleiotropy (used only for ntrait > 1)
+               'corTrait': 0.5, ## correlation between the QTLs effects of the different traits; consider full pleiotropy (used only for ntrait > 1)
+               'signCor': 'pos'} ## sign of the correlation between the different traits (either pos or neg) 
 
     ## rmk: the variance and covariance for the QTL effect is BEFORE the normalization by the phenotypic variance!!
 
@@ -167,8 +170,15 @@ if __name__ == '__main__':
     
     varEffect0 = float(parameters['varEffect0'])   
     varEffect = float(parameters['varEffect'])
+    signCor = parameters['signCor']
+    
+    testParameters(h2, h2_others, nTrait, prop0, nQTLChr, Lchr, varEffect0, signCor)
+    
     if nTrait > 1:
         corTrait = float(parameters['corTrait'])
+        if signCor == 'neg':
+            corTrait = -corTrait
+            parameters['corTrait'] = corTrait
         covTrait = []
         for i in range(nTrait):
             covTrait.append([corTrait * varEffect]*nTrait)
@@ -183,8 +193,6 @@ if __name__ == '__main__':
             covTrait0[i][i] = varEffect0
         parameters['covTrait0'] = covTrait0   
 
-
-    testParameters(h2, h2_others, nTrait, prop0, nQTLChr, Lchr, varEffect0)
 
     if not os.path.exists(savedFolder):
         os.mkdir(savedFolder)
