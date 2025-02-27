@@ -389,7 +389,7 @@ python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu5' -nQTLChr 1
 
 ```{r}
 ## load the data
-setwd("simulations/gwas_simu1")
+setwd("simulations/gwas_simu4")
 
 # load the data
 # pedigree information, also contains the phenotypes and breeding values
@@ -439,6 +439,13 @@ ggplot(lm.res) +
 
 # distribution of p-values
 hist(lm.res$pval, breaks = 100, prob = TRUE)
+
+## qqplot
+qqnorm(lm.res$tstat) ## t-stat
+qqline(lm.res$tstat, col = "red")
+## qqplot for -log10(pval)
+qqplot(-log10(ppoints(nsnp)), -log10(lm.res$pval), xlab = "theoretical", ylab = "observedd", main = "Q-Q Plot for -log10 Pval") 
+abline(a = 0, b = 1, col = "red")
 
 ```
 
