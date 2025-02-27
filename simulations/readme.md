@@ -97,20 +97,19 @@ python ../QLife2025/simulations/src/main.py -savedFolder 'genpred_simu4' -nQTLCh
 python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu1' -nQTLChr 1 -Lchr 1001 -LG 100 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &  
 
 # if LD between QTL and SNPs
-python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu2' -nQTLChr 1 -Lchr 10001 -LG 100 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
+python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu2' -nQTLChr 1 -Lchr 10001 -LG 10 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
+
 
 # with population structure 
-python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu3' -nQTLChr 1 -Lchr 10001 -LG 100 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 0.1 -h2 0.5 -G 10 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
+python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu3' -nQTLChr 1 -Lchr 10001 -LG 100 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 2 -varW 0.01 -h2 0.5 -G 10 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
 
 # B. multiple QTLs
 
 # QTLs + neutral SNPs
-python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu4' -nQTLChr 10 -Lchr 10010 -LG 100 -varEffect 100.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
+python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu4' -nQTLChr 100 -Lchr 10100 -LG 100 -varEffect 100.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
 
-python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu4b' -nQTLChr 10 -Lchr 10010 -LG 100 -varEffect 100.0 -proportion0 1.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
-
-# some QTLs with large effects + QTLs with weak effects + neutral SNPs
-python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu5' -nQTLChr 10 -Lchr 10010 -LG 100 -varEffect 100.0 -proportion0 0.1 -varEffect0 0.01 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
+# some QTLs with large effects + QTLs with weak effects 
+python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu5' -nQTLChr 100 -Lchr 10100 -LG 100 -varEffect 100.0 -proportion0 1.0 -varEffect0 0.01 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
 
 ```
 
