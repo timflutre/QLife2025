@@ -14,26 +14,26 @@ editor: visual
 ```{r echo=FALSE}
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(ggbeeswarm))
+
+suppressPackageStartupMessages(library(qvalue))
+suppressPackageStartupMessages(library(ashr))
+suppressPackageStartupMessages(library(rrBLUP))
+suppressPackageStartupMessages(library(gaston))
 ```
 
 # Main objective
 
-Studying the **genetic architecture** of complex (quantitative) traits aims at
-**idenfitying polymorphisms** (number, genomic locations, effects) affecting the 
-phenotypic differences between individuals. 
+Studying the **genetic architecture** of complex (quantitative) traits aims at **idenfitying polymorphisms** (number, genomic locations, effects) affecting the phenotypic differences between individuals.
 
 This can help to:
 
-- understand the biological processes underlying phenotypes
-- predict individual genetic values (diagnostic, selection ...)
-- separate out genetics from environmental effects
+-   understand the biological processes underlying phenotypes
+-   predict individual genetic values (diagnostic, selection ...)
+-   separate out genetics from environmental effects
 
-Before the 2000's, this was done thourgh **linkage analysis**, studying segregation of alleles in families. This approach although robust,
-was clearly limited in particular due to its lack of power, see [Risch and Merichangas (1996)](https://science.sciencemag.org/content/273/5281/1516). 
+Before the 2000's, this was done thourgh **linkage analysis**, studying segregation of alleles in families. This approach although robust, was clearly limited in particular due to its lack of power, see [Risch and Merichangas (1996)](https://science.sciencemag.org/content/273/5281/1516).
 
-A more powerful approach consists in sampling *unrelated* individuals from a 
-general population and test for **association** between individual genotypes and
-their phenotypes = GWAS. 
+A more powerful approach consists in sampling *unrelated* individuals from a general population and test for **association** between individual genotypes and their phenotypes = GWAS.
 
 ```{r message=FALSE}
 ## Sample Size
@@ -59,140 +59,515 @@ mod <- lm(Y ~ G)
 summary(mod)
 ```
 
-Although this appears simple enough, devil is in the details, and today we will
-be looking into how to deal with them in order to perform a robust yet powerful
-GWAS.
+Although this appears simple enough, devil is in the details, and today we will be looking into how to deal with them in order to perform a robust yet powerful GWAS.
 
 # Testing for association with a single QTL
 
 ## Linkage Disequilibrium and Marker Density
 
-Because we work with samples of unrelated individuals, the ability to detect 
-QTLs relies on the **Linkage Disequilibrium** between genotyped loci (markers) and
-acutal QTLs. Indeed, if the genotype correlation between marker and QTL is *r*,
-the power to detect the QTL with the marker decreases with **$r^2$**. 
-So one of the most important factor affecting the power of a GWAS is the **marker density**. 
+Because we work with samples of unrelated individuals, the ability to detect QTLs relies on the **Linkage Disequilibrium** between genotyped loci (markers) and acutal QTLs. Indeed, if the genotype correlation between marker and QTL is *r*, the power to detect the QTL with the marker decreases with $r^2$. So one of the most important factor affecting the power of a GWAS is the **marker density**.
 
-We will illustrate this by performing a simple GWAS on two datasets of different
-density
+We will illustrate this by performing a simple GWAS on two datasets of different density
 
 ### low density GWAS
 
-```{r}
-## Simulate a dataset with 200 markers per chromosome, one of which is a QTL
+```{bash, eval = FALSE}
+## suppose that we are in the student's working directory
+mkdir simulations
+cd simulations
 
-## test for association between markers and QTLs with a simple linear regression
-## use broom ?
+## Simulate a dataset with 200 markers per chromosome, one of which is a QTL
+python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu1' -nQTLChr 1 -Lchr 200 -LG 100 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &  
 ```
 
-**If you had not included the QTL in your analysis, would you have found it ?** 
+```{r}
+## test for association between markers and QTLs with a simple linear regression
+## use broom ?
+
+setwd("simulations/gwas_simu1")
+
+# load the data
+# pedigree information, also contains the phenotypes and breeding values
+ped <- read.table("pedigree.txt", header = TRUE)
+ped$generation <- factor(as.character(ped$generation),levels = as.character(sort(unique(ped$generation))),ordered = TRUE)
+# genotypes 
+geno <- read.table("genotype.txt", header = TRUE, sep = "\t", stringsAsFactors = FALSE, row.names = 1, check.names = FALSE)
+
+## only look at the initial generation
+indKeep <- which(ped$generation == 0)
+ped <- ped[indKeep,]
+geno <- geno[indKeep,]
+
+# snp information
+snp <- read.table("SNP_INFO.txt", header = TRUE, sep = "\t")
+print(nrow(snp[snp$beta_trait_1 != 0,])) # number of QTLs
+print(nrow(snp)) # total number of SNPs
+
+# frequency of allele 1 (allele with effect)
+freq <- colMeans(geno) / 2
+# filter the SNPs
+geno <- geno[, freq > 0 & freq < 1]
+snp <- snp[freq > 0 & freq < 1,]
+
+# association: linear regression, independently for each markers
+lm.res <- apply(geno, 2 , function(x) summary(lm(ped$pheno1 ~ x))$coeff[2,])
+# reformat the result for easier plotting
+lm.res <- as.data.frame(t(lm.res))
+colnames(lm.res) <- c("beta_hat", "se", "tstat", "pval")
+lm.res$beta <- snp$beta_trait_1
+lm.res$snp_id <- snp$snp_id
+lm.res$qtl <- 0
+lm.res$qtl[lm.res$beta != 0] <- 1
+nsnp <- nrow(lm.res)
+
+ggplot(lm.res) +
+    geom_point(aes(x = beta, y = beta_hat, col = as.factor(qtl))) +
+    scale_colour_manual(values = c('0' = "black", '1' = "red"))
+
+ggplot(lm.res) +
+    geom_point(aes(x = snp_id, y = -log10(pval), col = as.factor(qtl))) +
+    scale_colour_manual(values = c('0' = "black", '1' = "red"))
+
+# distribution of p-values
+hist(lm.res$pval, breaks = 100, prob = TRUE)
+
+```
+
+**If you had not included the QTL in your analysis, would you have found it ?**
 
 ### High density GWAS
 
-```{r}
+```{bash, eval = FALSE}
 ## Simulate a dataset with 20000 markers per chromosome, one of which is a QTL
-
-## test for association between markers and QTLs with a simple linear regression
+python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu2' -nQTLChr 1 -Lchr 20000 -LG 10 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
 ```
 
-**If you had not included the QTL in your analysis, would you have found it ?** 
 
+```{r}
+## test for association between markers and QTLs with a simple linear regression
 
-Generally, your study system will come with its available genotyping tools. These 
-will constrain the marker density of your GWAS. In addition to genotyping and
-sequencing techniques (RADseq, Low pass sequencing ...), statistical methods
-can be used to improve marker density: **genotype imputation methods**. We will
-not cover them in this practical, but know that if you have sufficiently large
-diversity panels for your species, these methods can greatly increase power
-of GWAS by predicting the genotype of individuals for large number of known markers.
+setwd("simulations/gwas_simu2")
+
+# load the data
+# pedigree information, also contains the phenotypes and breeding values
+ped <- read.table("pedigree.txt", header = TRUE)
+ped$generation <- factor(as.character(ped$generation),levels = as.character(sort(unique(ped$generation))),ordered = TRUE)
+# genotypes 
+geno <- read.table("genotype.txt", header = TRUE, sep = "\t", stringsAsFactors = FALSE, row.names = 1, check.names = FALSE)
+
+## only look at the initial generation
+indKeep <- which(ped$generation == 0)
+ped <- ped[indKeep,]
+geno <- geno[indKeep,]
+
+# snp information
+snp <- read.table("SNP_INFO.txt", header = TRUE, sep = "\t")
+print(nrow(snp[snp$beta_trait_1 != 0,])) # number of QTLs
+print(nrow(snp)) # total number of SNPs
+
+# frequency of allele 1 (allele with effect)
+freq <- colMeans(geno) / 2
+# filter the SNPs
+geno <- geno[, freq > 0 & freq < 1]
+snp <- snp[freq > 0 & freq < 1,]
+
+# association: linear regression, independently for each markers
+lm.res <- apply(geno, 2 , function(x) summary(lm(ped$pheno1 ~ x))$coeff[2,])
+# reformat the result for easier plotting
+lm.res <- as.data.frame(t(lm.res))
+colnames(lm.res) <- c("beta_hat", "se", "tstat", "pval")
+lm.res$beta <- snp$beta_trait_1
+lm.res$snp_id <- snp$snp_id
+lm.res$qtl <- 0
+lm.res$qtl[lm.res$beta != 0] <- 1
+nsnp <- nrow(lm.res)
+
+ggplot(lm.res) +
+    geom_point(aes(x = beta, y = beta_hat, col = as.factor(qtl))) +
+    scale_colour_manual(values = c('0' = "black", '1' = "red"))
+
+ggplot(lm.res) +
+    geom_point(aes(x = snp_id, y = -log10(pval), col = as.factor(qtl))) +
+    scale_colour_manual(values = c('0' = "black", '1' = "red"))
+
+# distribution of p-values
+hist(lm.res$pval, breaks = 100, prob = TRUE)
+
+```
+
+**If you had not included the QTL in your analysis, would you have found it ?**
+
+Generally, your study system will come with its available genotyping tools. These will constrain the marker density of your GWAS. In addition to genotyping and sequencing techniques (RADseq, Low pass sequencing ...), statistical methods can be used to improve marker density: **genotype imputation methods**. We will not cover them in this practical, but know that if you have sufficiently large diversity panels for your species, these methods can greatly increase power of GWAS by predicting the genotype of individuals for large number of known markers.
 
 ## Multiple testing
 
-By increasing the number of markers assessed for association, we increase the 
-number of statistical tests. In order to call significant associations we need 
-to account for this multiple testing. 
+By increasing the number of markers assessed for association, we increase the number of statistical tests. In order to call significant associations we need to account for this multiple testing.
 
-The simplest way to control for multiple testing is to control the Family Wise 
-Error Rate (FWER) by the Bonferroni procedure. The FWER is the probability that
-one of the test deemed significant is a false positive. For a single test, this
-is simply the associated p-value ($p$). So if you want to control the FWER at level
-$\alpha$, you will call your single test significant if $p \leq \alpha$. 
+The simplest way to control for multiple testing is to control the Family Wise Error Rate (FWER) by the Bonferroni procedure. The FWER is the probability that one of the test deemed significant is a false positive. For a single test, this is simply the associated p-value ($p$). So if you want to control the FWER at level $\alpha$, you will call your single test significant if $p \leq \alpha$.
 
-**Add a note on the null distribution of p-values**
-However, if you perform $n$ independant statistical test, you want to control
-the FWER with the same level $\alpha$, you need to adjust your threshold for 
-each of the $n$ tests. One procedure to do this is the so-called Bonferroni
-procedure, which corresponds to setting the significance threshold at $\alpha/n$.
-So for example if you want to control FWER at $\alpha=0.05$ and perform 1 million
-tests for association, you should only reject tests that have a pvalue less 
-than $0.05 \times 10^{-6} = 5.10^{-8}$
+**Add a note on the null distribution of p-values** However, if you perform $n$ independant statistical test, you want to control the FWER with the same level $\alpha$, you need to adjust your threshold for each of the $n$ tests. One procedure to do this is the so-called Bonferroni procedure, which corresponds to setting the significance threshold at $\alpha/n$. So for example if you want to control FWER at $\alpha=0.05$ and perform 1 million tests for association, you should only reject tests that have a pvalue less than $0.05 \times 10^{-6} = 5.10^{-8}$
 
-Implement the Bonferroni procedure on your GWAS results, how many SNPs can 
-you call significant ?
+Implement the Bonferroni procedure on your GWAS results, how many SNPs can you call significant ?
 
 ```{r}
-## Implement the Bonferronie procedure on the GWAS results
+## Implement the Bonferroni procedure on the GWAS results
+alpha <- 0.05
+ggplot(lm.res) +
+    geom_point(aes(x = snp_id, y = -log10(pval), col = as.factor(qtl))) +
+    geom_hline(yintercept = -log10(alpha/nsnp), col = "green") + # threshold corrected for the number of tests (i.e. number of SNPs tested)
+    scale_colour_manual(values = c('0' = "black", '1' = "red"))
 ```
 
-One problem with the Bonferroni procedure is that it is **conservative**, in 
-particular in the presence of correlated tests. One way to avoid this is to
-perform random **permutations** of the genotype / phenotype associations. This
-effectively simulates data under the null (no association between phenotype and
-genotype) and allows to account both for multiple testing and correlation between
-tests. 
+One problem with the Bonferroni procedure is that it is **conservative**, in particular in the presence of correlated tests. One way to avoid this is to perform random **permutations** of the genotype / phenotype associations. This effectively simulates data under the null (no association between phenotype and genotype) and allows to account both for multiple testing and correlation between tests.
 
 ```{r}
 ## assess significance via permutations
+
+# permutations:
+# permutate the phenotypes
+# and test the association as before
+# for each SNP, look at the number of times the observed p-value is LESS than the minimal p-value obtained for a permutation (all test - i.e. SNP - considered)
+# do it multiple (nrep) times
+permutation_test <- function(ped, geno, nrep, pval_obs) {
+    res <- matrix(0, nrow = nrep, ncol = length(pval))
+    for(irep in 1:nrep) {
+        pheno <- sample(ped$pheno1)
+        lm.res <- apply(geno, 2 , function(x) summary(lm(ped$pheno1 ~ x))$coeff[2,])
+        res[irep,] <- pval < min(lm.res[4,])
+    }
+    res <- apply(res, 2, mean)
+    return(res)
+}
+
+lm.res$pval2 <- permutation_test(ped, geno, 10, pval_obs = lm.res$pval)
+
 ```
 
 ## Population structure
 
-Until now, we have assumed (and simulated) individuals that come from a random
-mating population of constant size with no selection or migration. In this ideal
-situation all individuals are essentially exchangeable and we have no factors 
-counfounding the association between genotype and phenotype.
+Until now, we have assumed (and simulated) individuals that come from a random mating population of constant size with no selection or migration. In this ideal situation all individuals are essentially exchangeable and we have no factors counfounding the association between genotype and phenotype.
 
-Unfortunately, almost no real world scenario fits this situation. So one has to
-account for **population structure** when performing a GWAS. There are several
-ways to do it, we will see one in this section and another one in the next. 
+Unfortunately, almost no real world scenario fits this situation. So one has to account for **population structure** when performing a GWAS. There are several ways to do it, we will see one in this section and another one in the next.
 
-First, let's run some new simulations where our initial panmictic populations is
-subjected to selection (**ADD DETAILS ON THE SIMULATIONS HERE**) and see the 
-consequences on our GWAS results.
+First, let's run some new simulations where our initial panmictic populations is subjected to selection (**ADD DETAILS ON THE SIMULATIONS HERE**) and see the consequences on our GWAS results.
+
+```{bash, eval = FALSE}
+## RUN simulations with selection
+python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu3' -nQTLChr 1 -Lchr 20000 -LG 100 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 2 -varW 0.01 -h2 0.5 -G 10 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
+```
 
 ```{r}
-## RUN simulations with selection
+## Run the lm GWAS
+setwd("simulations/gwas_simu3")
 
-## Runt he lm GWAS
+# load the data
+# pedigree information, also contains the phenotypes and breeding values
+ped <- read.table("pedigree.txt", header = TRUE)
+ped$generation <- factor(as.character(ped$generation),levels = as.character(sort(unique(ped$generation))),ordered = TRUE)
+# genotypes 
+geno <- read.table("genotype.txt", header = TRUE, sep = "\t", stringsAsFactors = FALSE, row.names = 1, check.names = FALSE)
+
+## only look at the initial generation
+indKeep <- which(ped$generation == 10)
+ped <- ped[indKeep,]
+geno <- geno[indKeep,]
+
+# snp information
+snp <- read.table("SNP_INFO.txt", header = TRUE, sep = "\t")
+print(nrow(snp[snp$beta_trait_1 != 0,])) # number of QTLs
+print(nrow(snp)) # total number of SNPs
+
+# frequency of allele 1 (allele with effect)
+freq <- colMeans(geno) / 2
+# filter the SNPs
+geno <- geno[, freq > 0 & freq < 1]
+snp <- snp[freq > 0 & freq < 1,]
+
+# association: linear regression, independently for each markers
+lm.res <- apply(geno, 2 , function(x) summary(lm(ped$pheno1 ~ x))$coeff[2,])
+# reformat the result for easier plotting
+lm.res <- as.data.frame(t(lm.res))
+colnames(lm.res) <- c("beta_hat", "se", "tstat", "pval")
+lm.res$beta <- snp$beta_trait_1
+lm.res$snp_id <- snp$snp_id
+lm.res$qtl <- 0
+lm.res$qtl[lm.res$beta != 0] <- 1
+nsnp <- nrow(lm.res)
 
 ## Look at the results
+ggplot(lm.res) +
+    geom_point(aes(x = beta, y = beta_hat, col = as.factor(qtl))) +
+    scale_colour_manual(values = c('0' = "black", '1' = "red"))
+
+ggplot(lm.res) +
+    geom_point(aes(x = snp_id, y = -log10(pval), col = as.factor(qtl))) +
+    geom_hline(yintercept = -log10(alpha/nsnp), col = "green") + # threshold corrected for the number of tests (i.e. number of SNPs tested)
+    scale_colour_manual(values = c('0' = "black", '1' = "red"))
+
+# distribution of p-values
+hist(lm.res$pval, prob = TRUE)
+
 ```
 
-- Run the GWAS (using lm) on individuals from the last generation of the dataset
-- Using the Bonferroni procedure, how many SNPs would be called significant ?
-- Plot the distribution of p-values ? Compare it to the distribution of p-values
-in the GWAS in the random mating population. What do you see ? 
+-   Run the GWAS (using lm) on individuals from the last generation of the dataset
+-   Using the Bonferroni procedure, how many SNPs would be called significant ?
+-   Plot the distribution of p-values ? Compare it to the distribution of p-values in the GWAS in the random mating population. What do you see ?
 
-**Population structure** can be caused by many processes, including selection,
-isolation-by-distance, barriers to gene flow, assortative mating ... It will
-create false positives in GWAS if not accounted for properly.
+**Population structure** can be caused by many processes, including selection, isolation-by-distance, barriers to gene flow, assortative mating ... It will create false positives in GWAS if not accounted for properly.
 
-To account for populations structure, the simplest method is to use Principal
-Component Analysis of the genotype matrix to reveal axes of genetic structuration.
-We can then include the main PCs as regressors in the GWAS model
+To account for populations structure, the simplest method is to use Principal Component Analysis of the genotype matrix to reveal axes of genetic structuration. We can then include the main PCs as regressors in the GWAS model
 
 ```{r}
+# do the PCA on the GRM (cf. Genomic Prediction practical)
+# use the Van Raden estimation
+estimVanRanden1 <- function(mat, AFs=NULL){
+    if(all(mat >= 0)){ # need column-wise mean-centering
+        M <- mat
+        if(is.null(AFs)){
+            AFs <- colMeans(mat) / 2
+        } else
+            stopifnot(length(AFs) == ncol(mat))
+        tmp <- matrix(rep(1, nrow(M))) %*% (2 * AFs)
+        Z <- M - tmp
+        
+    } else{ # columns assumed already centered
+        stopifnot(sapply(colMeans(mat), all.equal, 0.0))
+        Z <- mat
+    }
+    tcrossprod(Z, Z) / (2 * sum(AFs * (1 - AFs)))
+}
+
+AFs_VR1 <- colMeans(geno) / 2 ## get the allele frequencies
+tmp <- matrix(rep(1, nrow(geno))) %*% (2 * AFs_VR1)
+Z_VR1 <- as.matrix(geno - tmp)
+GRM_VR1 <- estimVanRanden1(Z_VR1, AFs_VR1)
+
 ## Perform a PCA on the genotype matrix
+pca <- eigen(GRM_VR1, symmetric = TRUE)
 
 ## looking at Eigen Values, decide on a number of component to include
+plot(100*pca$values / sum(pca$values), xlab = "PC", ylab = "% Variance explained (GRM)")
 
 ## add these components in the lm
+nPC <- 50 # number of PC to use
+# association testing
+lm.res <- apply(geno, 2 , function(x) summary(lm(ped$pheno1 ~ pca$vectors[,1:nPC] + x))$coeff[nPC+2,])
+# reformat the result
+lm.res <- as.data.frame(t(lm.res))
+colnames(lm.res) <- c("beta_hat", "se", "tstat", "pval")
+lm.res$beta <- snp$beta_trait_1
+lm.res$snp_id <- snp$snp_id
+lm.res$qtl <- 0
+lm.res$qtl[lm.res$beta != 0] <- 1
+nsnp <- nrow(lm.res)
+
+ggplot(lm.res) +
+    geom_point(aes(x = snp_id, y = -log10(pval), col = as.factor(qtl))) +
+    geom_hline(yintercept = -log10(0.05/nsnp), col = "green") + ## threshold corrected for the number of tests (i.e. number of SNPs tested)
+    scale_colour_manual(values = c('0' = "black", '1' = "red"))
+
+# distribution of p-values
+hist(lm.res$pval, prob = TRUE)
 ```
 
-- Run the GWAS (using lm + PC covariates) on individuals from the last 
-generation of the dataset
-- Using the Bonferroni procedure, how many SNPs would be called significant ?
-- Plot the distribution of p-values ? Compare it to the distribution of p-values
-in the GWAS without PC correction. What happened ? 
+-   Run the GWAS (using lm + PC covariates) on individuals from the last generation of the dataset
+-   Using the Bonferroni procedure, how many SNPs would be called significant ?
+-   Plot the distribution of p-values ? Compare it to the distribution of p-values in the GWAS without PC correction. What happened ?
 
 # Multiple QTLs
+
+
+```{bash, eval = FALSE}
+## Simulations for the multi-QTLs
+# QTLs + neutral SNPs
+python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu4' -nQTLChr 100 -Lchr 10100 -LG 100 -varEffect 100.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
+
+# some QTLs with large effects + QTLs with weak effects 
+python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu5' -nQTLChr 100 -Lchr 10100 -LG 100 -varEffect 100.0 -proportion0 1.0 -varEffect0 0.01 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
+```
+
+
+```{r}
+## load the data
+setwd("simulations/gwas_simu1")
+
+# load the data
+# pedigree information, also contains the phenotypes and breeding values
+ped <- read.table("pedigree.txt", header = TRUE)
+ped$generation <- factor(as.character(ped$generation),levels = as.character(sort(unique(ped$generation))),ordered = TRUE)
+# genotypes 
+geno <- read.table("genotype.txt", header = TRUE, sep = "\t", stringsAsFactors = FALSE, row.names = 1, check.names = FALSE)
+
+## only look at the initial generation
+indKeep <- which(ped$generation == 0)
+ped <- ped[indKeep,]
+geno <- geno[indKeep,]
+
+# snp information
+snp <- read.table("SNP_INFO.txt", header = TRUE, sep = "\t")
+print(nrow(snp[snp$beta_trait_1 != 0,])) # number of QTLs
+print(nrow(snp)) # total number of SNPs
+
+# frequency of allele 1 (allele with effect)
+freq <- colMeans(geno) / 2
+# filter the SNPs
+geno <- geno[, freq > 0 & freq < 1]
+snp <- snp[freq > 0 & freq < 1,]
+```
+
+```{r}
+## linear regression
+
+# association: linear regression, independently for each markers
+lm.res <- apply(geno, 2 , function(x) summary(lm(ped$pheno1 ~ x))$coeff[2,])
+# reformat the result for easier plotting
+lm.res <- as.data.frame(t(lm.res))
+colnames(lm.res) <- c("beta_hat", "se", "tstat", "pval")
+lm.res$beta <- snp$beta_trait_1
+lm.res$snp_id <- snp$snp_id
+lm.res$qtl <- 0
+lm.res$qtl[lm.res$beta != 0] <- 1
+nsnp <- nrow(lm.res)
+
+ggplot(lm.res) +
+    geom_point(aes(x = beta, y = beta_hat, col = as.factor(qtl))) +
+    scale_colour_manual(values = c('0' = "black", '1' = "red"))
+
+ggplot(lm.res) +
+    geom_point(aes(x = snp_id, y = -log10(pval), col = as.factor(qtl))) +
+    scale_colour_manual(values = c('0' = "black", '1' = "red"))
+
+# distribution of p-values
+hist(lm.res$pval, breaks = 100, prob = TRUE)
+
+```
+
+q-values
+
+```{r}
+qval <- qvalue(p = lm.res$pval)
+summary(qval) ## pi0: overall proportion of true null hypothesis (beta = 0)
+plot(-log10(qval$pvalues), -log10(qval$qvalues))
+
+lm.res$qval <- qval$qvalues
+
+ggplot(lm.res) +
+    geom_point(aes(x = snp_id, y = -log10(qval), col = as.factor(qtl))) +
+    scale_colour_manual(values = c('0' = "black", '1' = "red"))
+
+## distribution of q-values
+hist(lm.res$qval, prob = TRUE)
+```
+
+ashr
+
+```{r}
+beta.ash <- ash(lm.res$beta_hat, lm.res$se)
+summary(beta.ash)
+
+lm.res$beta_ash <- beta.ash$result$PosteriorMean
+lm.res$qval_ash <- beta.ash$result$qvalue
+
+ggplot(lm.res) +
+    geom_point(aes(x = beta_hat, beta_ash, col = as.factor(qtl))) +
+    scale_colour_manual(values = c('0' = "black", '1' = "red"))
+
+ggplot(lm.res) +
+    geom_point(aes(x = snp_id, y = -log10(qval_ash), col = as.factor(qtl))) +
+    scale_colour_manual(values = c('0' = "black", '1' = "red"))
+
+```
+
+gemma (bslmm)
+
+```{bash}
+## reformat the input data
+## to get the needed format
+
+mkdir gemma
+cd gemma
+
+## as input, need .fam, .bim and .bed files
+awk 'BEGIN {OFS="\t"} NR > 1 && $6 == 0 {print "1", $1, $3, $2, $4, $7}' ../pedigree.txt > simu.fam
+LC_NUMERIC=C awk -F'\t' 'NR==2 {divisor = $3} NR > 1 {print $2, $1, $3, $3*10/divisor, $4, $5}' OFS='\t' ../SNP_INFO.txt > simu.bim
+## there are 100 individuals in the founders, to adapt to the simulations
+head -n 101 ../genotype.txt | awk 'NR > 1 { $1=""; print substr($0,2) }'  | tr -s ' ' '\t' | \
+awk '
+BEGIN { 
+    FS = OFS = "\t" 
+}
+{
+    for (i = 1; i <= NF; i++) {
+        a[i] = a[i] $i "\t"
+    }
+}
+END {
+    for (i = 1; i in a; i++) {
+        print substr(a[i], 1, length(a[i]) - 1)
+    }
+}
+' > simu.txt 
+## then use ldak (cf Genomic Prediction practical) to generate the .bed file
+../../../tests/genpred/LDAK/ldak6.1.linux --make-bed simu2 --gen simu.txt --bim simu.bim --fam simu.fam --gen-skip 0 --gen-headers 0 --gen-probs 1 --threshold 1
+
+## run gemma (installed using conda)
+gemma -bfile simu2 -bslmm 1
+
+```
+
+
+```{r}
+## visualization
+
+gemma.res <- read.table("gemma/output/result.param.txt", header = TRUE)
+colnames(gemma.res) <- c("chr", "rs", "ps", "n_miss", "alpha_gemma", "beta_gemma", "gamma_gemma")
+
+lm.res$rs <- as.numeric(row.names(lm.res))
+data <- merge(lm.res, gemma.res)
+
+ggplot(data, aes(x = beta_hat, y = alpha_gemma + beta_gemma)) + 
+    geom_point() 
+```
+
+rrBLUP
+
+```{r}
+rrblup.res <- mixed.solve(y = ped$pheno1, Z = as.matrix(geno)) ## by default K = I
+lm.res$beta_blup <- rrblup.res$u
+
+ggplot(lm.res, aes(x = beta_hat, y = beta_blup)) + 
+    geom_point() 
+```
+
+gaston
+
+```{r}
+## generate the inputs to be used
+simu.fam <- cbind(fam.id = 1, ped[,c("ind_id", "father_id", "mother_id", "sex", "pheno1")])
+colnames(simu.fam) <- c("famid", "id", "father", "mother", "sex", "pheno")
+simu.bim <- cbind(snp[,c("chr_id", "snp_id", "gen_pos")], phys_pos = 10*snp$gen_pos/snp$gen_pos[1], snp[,c("ALT", "REF")])
+colnames(simu.bim) <- c("chr", "id", "dist", "pos", "A1", "A2")
+simu.bim <- simu.bim[freq > 0 & freq < 1,] ## remove the fixed SNPs
+simu.gen <- as.matrix(geno)
+
+x <- as.bed.matrix(simu.gen, simu.fam, simu.bim)
+standardize(x) <- 'p'
+## calculate the GRM (needed for the background effect)
+K <- GRM(x)
+eigK <- eigen(K, symmetric = TRUE) 
+X <- matrix(1, nrow(x))
+
+## association test
+gaston.res <- association.test(x = x, Y = x@ped$pheno, X = X, method = "lmm", test = "wald", response = "quantitative", eigenK = eigK)
+
+ggplot(gaston.res) +
+    geom_point(aes(x = id, y = -log10(p))) 
+
+lm.res$beta_gaston <- gaston.res$beta
+ggplot(lm.res) +
+    geom_point(aes(x = beta_hat, y = beta_gaston)) 
+```
+
+
+
+
