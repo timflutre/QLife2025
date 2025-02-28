@@ -142,7 +142,7 @@ ggplot(lm.res) +
 
 ```{bash, eval = FALSE}
 ## Simulate a dataset with 20000 markers per chromosome, one of which is a QTL
-python src/main.py -savedFolder 'gwas_simu2' -nQTL 1 -Lchr 20000 -LG 10 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
+python src/main.py -savedFolder 'gwas_simu2' -nQTL 1 -Lchr 20000 -LG 100 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
 ```
 
 
@@ -442,9 +442,9 @@ ped$generation <- factor(as.character(ped$generation), levels = as.character(sor
 geno <- read.table("simulations/gwas_simu4/genotype.txt", header = TRUE, sep = "\t", stringsAsFactors = FALSE, row.names = 1, check.names = FALSE)
 
 ## only look at the initial generation
-# indKeep <- which(ped$generation == 0)
-# ped <- ped[indKeep, ]
-# geno <- geno[indKeep, ]
+indKeep <- which(ped$generation == 0)
+ped <- ped[indKeep, ]
+geno <- geno[indKeep, ]
 
 # snp information
 snp <- read.table("simulations/gwas_simu4/SNP_INFO.txt", header = TRUE, sep = "\t")
@@ -621,7 +621,7 @@ X <- matrix(1, nrow(x))
 gaston.res <- association.test(x = x, Y = x@ped$pheno, X = X, method = "lmm", test = "wald", response = "quantitative", eigenK = eigK)
 
 ggplot(gaston.res) +
-  geom_point(aes(x = id, y = -log10(p), col = as.factor(chr_id)))
+  geom_point(aes(x = id, y = -log10(p), col = as.factor(chr)))
 
 lm.res$beta_gaston <- gaston.res$beta
 ggplot(lm.res) +
