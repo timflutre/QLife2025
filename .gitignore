@@ -1,2 +1,10 @@
 *~
 *.html
+.Rproj.user
+*.Rproj
+.RData
+.Rhistory
+simulations/example_data.tar.gz
+simulations/gwas*
+simulations/out_gwas
+gwas_files/
