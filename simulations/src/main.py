@@ -120,7 +120,7 @@ if __name__ == '__main__':
                'Npop' : 10000,
                'nTrait' : 1,
                'nChr' : 1,
-               'nQTLChr' : 1, ## number of QTLs per chromosome (whose effect is drawn from N(0,varEffect))
+               'nQTL' : 1, ## total number of QTLs (whose effect is drawn from N(0,varEffect))
                'Lchr' : 1000,
                'LG' : 100, ## genetic length of one chromosome, in cM
                'mu' : 1e-4,
@@ -159,7 +159,7 @@ if __name__ == '__main__':
     h2_others = [float(i) for i in parameters['h2'][1:]] ## heritabilities of the other traits; if nTrait = 1, then it will be empty
     nTrait = int(parameters['nTrait'])
     nChr = int(parameters['nChr']) ## the chromosomes are independant
-    nQTLChr = int(parameters['nQTLChr']) ## number of QTLs per chromosome // consider that all chromosomes have the same number of QTLs
+    nQTLChr = int(parameters['nQTL']) ## total number of QTLs on the genome
     Lchr = int(parameters['Lchr']) ## Lchr = sequence length (number of sites), per chromosome // consider that all chromosomes have the same number of sites
     prop0 = float(parameters['proportion0']) ## proportion of markers drawn from N(0, varEffect0) among the markers; if varEffect0 -> these are neutral
     LG = float(parameters['LG'])/100 ## genetic length, in M, of each chromosome
@@ -279,27 +279,30 @@ if __name__ == '__main__':
     #-------------------- forward-in-time simulations, with selection
     
     ## define which markers are QTLs and which ones are neutral
-    ## in the case of proportionQTL < 1
-    ## consider that all chromosomes have the same number of QTLs
-    ## that are randomly placed along the chromosomes
-    if Lchr >= 10:
-        L0 = round(prop0*(Lchr-nQTLChr)) ## number of QTL drawn from distribution 0 (varEffect0) per chromosome (proportion of the total number of sites, minus the QTLs from the other distribution)
-        qtl = [random.sample([0]*(Lchr-(L0+nQTLChr)) + [1]*nQTLChr + [2]*L0, Lchr) for i in range(nChr)] ## 0 = neutral sites, 1 = QTL, 2 = QTL second distribution of effects
-        ## if the number of QTLs is 1
-        ## force the QTL to be at a SNP
-        if nQTLChr == 1:
-            qtl = [random.sample([0]*(Lchr-L0)+ [2]*L0, Lchr) for i in range(nChr)]
-            for ichr in range(nChr):
-                qtl[ichr][int(random.choice(variants[ichr]))] = 1
-        qtl = [j for i in qtl for j in i]
+    ## nQTLChr is the total number of QTLs of the whole genome
+    ## randomly assign a QTL to a chromosome (among the variants)
+    ## do it sequentially: for eg, if there are 5 chr and 5 QTLs, there will be one QTL per chromosome
+    list_chr = np.random.choice(nChr, nChr, replace = False)
+    qtlLeft = nQTLChr ## number of QTLs left to be assigned to a chromosome
+    list_qtl = [0]*nChr ## number of QTLs in each chromosome
+    while qtlLeft > 0:
+        for ichr in list_chr:
+            if qtlLeft > 0:
+                list_qtl[ichr] += 1
+                qtlLeft -= 1
     
-    ## if there are less than 10 markers per chromosome 
-    ## consider all chromosomes together
-    ## (if less than 10, then the proportion of QTLs cannot be correctly represented on a per-chromosome basis)
-    if Lchr < 10:
-        L0 = round(prop0*(L-nQTLChr*Lchr))
-        qtl = random.sample([0]*(L-(L0+nQTLChr)) + [1]*nQTLChr*Lchr + [2]*L0, L)
-        ## !! NEED TO ADD CONDITIONS TO CHECK THAT THE QTL IS AT A SNP IF nQTL = 1
+     
+    L0 = [round(prop0*Lchr) for i in range(nChr)] ## number of QTL drawn from distribution 0 (varEffect0) per chromosome
+    qtl = [random.sample([0]*(Lchr-L0[i]) + [2]*L0[i], Lchr) for i in range(nChr)] ## assign a "type" to each site: 0 = neutral sites, 1 = QTL, 2 = QTL second distribution of effects
+    ## force the major QTLs to be a SNP
+    for ichr in range(nChr):
+        if list_qtl[ichr] > 0:
+            variants_qtl = np.random.choice(variants[ichr], list_qtl[ichr], replace = False)
+            for iqtl in variants_qtl:
+                qtl[ichr][int(iqtl)] = 1
+    
+    qtl = [j for i in qtl for j in i]
+  
     
     ## consider that all the variants can be QTLs
     ## with a given distribution of effect (normal distribution?)
