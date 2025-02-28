@@ -2,11 +2,21 @@ name: qlife_simu
 channels:
   - conda-forge
   - defaults
+  - genomedk
+  - bioconda
 dependencies:
   - python=3.9.18
   - simupop=1.1.17
   - msprime=1.3.3
   - numpy=1.22.3
   - scipy=1.10.1
+  - ldak6
+  - gemma
+  - bioconductor-qvalue
+  - r-ashr
+  - r-rrblup
+  - r-gaston
+  - r-ggbeeswarm
+  - r-tidyverse
 
 
