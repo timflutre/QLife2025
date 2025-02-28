@@ -81,7 +81,7 @@ mkdir -p simulations
 cd simulations
 
 ## Simulate a dataset with 200 markers per chromosome, one of which is a QTL
-python simulations/src/main.py -savedFolder 'gwas_simu1' -nQTLChr 1 -Lchr 200 -LG 100 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &  
+python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu1' -nQTL 1 -Lchr 200 -LG 100 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &  
 ```
 
 ```{r}
@@ -142,7 +142,7 @@ ggplot(lm.res) +
 
 ```{bash, eval = FALSE}
 ## Simulate a dataset with 20000 markers per chromosome, one of which is a QTL
-python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu2' -nQTLChr 1 -Lchr 20000 -LG 10 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
+python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu2' -nQTL 1 -Lchr 20000 -LG 10 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
 ```
 
 
@@ -275,7 +275,7 @@ First, let's run some new simulations where our initial panmictic populations is
 
 ```{bash, eval = FALSE}
 ## RUN simulations with selection
-python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu3' -nQTLChr 1 -Lchr 20000 -LG 100 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 2 -varW 0.01 -h2 0.5 -G 10 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
+python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu3' -nQTL 1 -Lchr 2000 -LG 100 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 1 -varW 0.01 -h2 0.5 -G 10 -N 100 -Npop 10000 -nTrait 1 -nChr 10 -mu 1e-5 >> out_gwas &
 ```
 
 ```{r}
@@ -312,6 +312,7 @@ lm.res <- as.data.frame(t(lm.res))
 colnames(lm.res) <- c("beta_hat", "se", "tstat", "pval")
 lm.res$beta <- snp$beta_trait_1
 lm.res$snp_id <- snp$snp_id
+lm.res$chr_id <- snp$chr_id
 lm.res$qtl <- 0
 lm.res$qtl[lm.res$beta != 0] <- 1
 nsnp <- nrow(lm.res)
@@ -322,9 +323,8 @@ nsnp <- nrow(lm.res)
 ##  scale_colour_manual(values = c("0" = "black", "1" = "red"))
 
 ggplot(lm.res) +
-  geom_point(aes(x = snp_id, y = -log10(pval), col = as.factor(qtl))) +
-  geom_hline(yintercept = -log10(alpha / nsnp), col = "green") + # threshold corrected for the number of tests (i.e. number of SNPs tested)
-  scale_colour_manual(values = c("0" = "black", "1" = "red"))
+  geom_point(aes(x = snp_id, y = -log10(pval), shape = as.factor(qtl), col = as.factor(chr_id))) +
+  geom_hline(yintercept = -log10(alpha / nsnp), col = "green")  # threshold corrected for the number of tests (i.e. number of SNPs tested)
 
 # distribution of p-values
 hist(lm.res$pval, prob = TRUE, n = 100)
@@ -380,14 +380,15 @@ lm.res.pca <- as.data.frame(t(lm.res.pca))
 colnames(lm.res.pca) <- c("beta_hat", "se", "tstat", "pval")
 lm.res.pca$beta <- snp$beta_trait_1
 lm.res.pca$snp_id <- snp$snp_id
+lm.res.pca$chr_id <- snp$chr_id
 lm.res.pca$qtl <- 0
 lm.res.pca$qtl[lm.res.pca$beta != 0] <- 1
 nsnp <- nrow(lm.res.pca)
 
 ggplot(lm.res.pca) +
-  geom_point(aes(x = snp_id, y = -log10(pval), col = as.factor(qtl))) +
-  geom_hline(yintercept = -log10(0.05 / nsnp), col = "green") + ## threshold corrected for the number of tests (i.e. number of SNPs tested)
-  scale_colour_manual(values = c("0" = "black", "1" = "red"))
+  geom_point(aes(x = snp_id, y = -log10(pval), shape = as.factor(qtl), col = as.factor(chr_id))) +
+  geom_hline(yintercept = -log10(0.05 / nsnp), col = "green")  ## threshold corrected for the number of tests (i.e. number of SNPs tested)
+
 
 # distribution of p-values
 hist(lm.res.pca$pval, prob = TRUE, n = 100)
@@ -423,7 +424,7 @@ about 100 are going to be QTLs. The overall heritability of the trait is set to
 ```{bash, eval = FALSE}
 ## Simulations for the multi-QTLs
 # QTLs + neutral SNPs
-python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu4' -nQTLChr 100 -Lchr 10100 -LG 100 -varEffect 100.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
+python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu4' -nQTL 100 -Lchr 2000 -LG 100 -varEffect 100.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 1000 -Npop 10000 -nTrait 1 -nChr 10 -mu 1e-5 >> out_gwas &
 
 ```
 
@@ -470,6 +471,7 @@ lm.res <- as.data.frame(t(lm.res))
 colnames(lm.res) <- c("beta_hat", "se", "tstat", "pval")
 lm.res$beta <- snp$beta_trait_1
 lm.res$snp_id <- snp$snp_id
+lm.res$chr_id <- snp$chr_id
 lm.res$qtl <- 0
 lm.res$qtl[lm.res$beta != 0] <- 1
 nsnp <- nrow(lm.res)
@@ -479,8 +481,7 @@ ggplot(lm.res) +
   scale_colour_manual(values = c("0" = "black", "1" = "red"))
 
 ggplot(lm.res) +
-  geom_point(aes(x = snp_id, y = -log10(pval), col = as.factor(qtl))) +
-  scale_colour_manual(values = c("0" = "black", "1" = "red"))
+  geom_point(aes(x = snp_id, y = -log10(pval), shape = as.factor(qtl), col = as.factor(chr_id))) 
 
 # distribution of p-values
 hist(lm.res$pval, breaks = 100, prob = TRUE)
@@ -525,8 +526,7 @@ ggplot(lm.res) +
   scale_colour_manual(values = c("0" = "black", "1" = "red"))
 
 ggplot(lm.res) +
-  geom_point(aes(x = snp_id, y = -log10(qval_ash), col = as.factor(qtl))) +
-  scale_colour_manual(values = c("0" = "black", "1" = "red"))
+  geom_point(aes(x = snp_id, y = -log10(qval_ash), shape = as.factor(qtl), col = as.factor(chr_id))) 
 ```
 
 ## Polygenic model
@@ -535,7 +535,7 @@ ggplot(lm.res) +
 
 ```{bash, eval=FALSE}
 # some QTLs with large effects + QTLs with weak effects 
-python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu5' -nQTLChr 100 -Lchr 10100 -LG 100 -varEffect 100.0 -proportion0 1.0 -varEffect0 0.01 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
+python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu5' -nQTL 100 -Lchr 2000 -LG 100 -varEffect 100.0 -proportion0 1.0 -varEffect0 0.01 -optim 0.2 -varW 1 -h2 0.5 -G 10 -N 100 -Npop 10000 -nTrait 1 -nChr 10 -mu 1e-5 >> out_gwas &
 ```
 
 Read in data:
@@ -578,6 +578,7 @@ lm.res <- as.data.frame(t(lm.res))
 colnames(lm.res) <- c("beta_hat", "se", "tstat", "pval")
 lm.res$beta <- snp$beta_trait_1
 lm.res$snp_id <- snp$snp_id
+lm.res$chr_id <- snp$chr_id
 lm.res$qtl <- 0
 lm.res$qtl[lm.res$beta != 0] <- 1
 nsnp <- nrow(lm.res)
@@ -620,7 +621,7 @@ X <- matrix(1, nrow(x))
 gaston.res <- association.test(x = x, Y = x@ped$pheno, X = X, method = "lmm", test = "wald", response = "quantitative", eigenK = eigK)
 
 ggplot(gaston.res) +
-  geom_point(aes(x = id, y = -log10(p)))
+  geom_point(aes(x = id, y = -log10(p), col = as.factor(chr_id)))
 
 lm.res$beta_gaston <- gaston.res$beta
 ggplot(lm.res) +
