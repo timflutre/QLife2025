@@ -81,7 +81,7 @@ mkdir -p simulations
 cd simulations
 
 ## Simulate a dataset with 200 markers per chromosome, one of which is a QTL
-python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu1' -nQTL 1 -Lchr 200 -LG 100 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &  
+python src/main.py -savedFolder 'gwas_simu1' -nQTL 1 -Lchr 200 -LG 100 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &  
 ```
 
 ```{r}
@@ -142,7 +142,7 @@ ggplot(lm.res) +
 
 ```{bash, eval = FALSE}
 ## Simulate a dataset with 20000 markers per chromosome, one of which is a QTL
-python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu2' -nQTL 1 -Lchr 20000 -LG 10 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
+python src/main.py -savedFolder 'gwas_simu2' -nQTL 1 -Lchr 20000 -LG 10 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
 ```
 
 
@@ -275,7 +275,7 @@ First, let's run some new simulations where our initial panmictic populations is
 
 ```{bash, eval = FALSE}
 ## RUN simulations with selection
-python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu3' -nQTL 1 -Lchr 2000 -LG 100 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 1 -varW 0.01 -h2 0.5 -G 10 -N 100 -Npop 10000 -nTrait 1 -nChr 10 -mu 1e-5 >> out_gwas &
+python src/main.py -savedFolder 'gwas_simu3' -nQTL 1 -Lchr 2000 -LG 100 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 1 -varW 0.01 -h2 0.5 -G 10 -N 100 -Npop 10000 -nTrait 1 -nChr 10 -mu 1e-5 >> out_gwas &
 ```
 
 ```{r}
@@ -424,7 +424,7 @@ about 100 are going to be QTLs. The overall heritability of the trait is set to
 ```{bash, eval = FALSE}
 ## Simulations for the multi-QTLs
 # QTLs + neutral SNPs
-python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu4' -nQTL 100 -Lchr 2000 -LG 100 -varEffect 100.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 1000 -Npop 10000 -nTrait 1 -nChr 10 -mu 1e-5 >> out_gwas &
+python src/main.py -savedFolder 'gwas_simu4' -nQTL 100 -Lchr 2000 -LG 100 -varEffect 100.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 1000 -Npop 10000 -nTrait 1 -nChr 10 -mu 1e-5 >> out_gwas &
 
 ```
 
@@ -535,7 +535,7 @@ ggplot(lm.res) +
 
 ```{bash, eval=FALSE}
 # some QTLs with large effects + QTLs with weak effects 
-python ../QLife2025/simulations/src/main.py -savedFolder 'gwas_simu5' -nQTL 100 -Lchr 2000 -LG 100 -varEffect 100.0 -proportion0 1.0 -varEffect0 0.01 -optim 0.2 -varW 1 -h2 0.5 -G 10 -N 100 -Npop 10000 -nTrait 1 -nChr 10 -mu 1e-5 >> out_gwas &
+python src/main.py -savedFolder 'gwas_simu5' -nQTL 100 -Lchr 2000 -LG 100 -varEffect 100.0 -proportion0 1.0 -varEffect0 0.01 -optim 0.2 -varW 1 -h2 0.5 -G 10 -N 100 -Npop 10000 -nTrait 1 -nChr 10 -mu 1e-5 >> out_gwas &
 ```
 
 Read in data:
@@ -640,10 +640,10 @@ mkdir gemma
 cd gemma
 
 ## as input, need .fam, .bim and .bed files
-awk 'BEGIN {OFS="\t"} NR > 1 && $6 == 0 {print "1", $1, $3, $2, $4, $7}' ../pedigree.txt > simu.fam
+awk 'BEGIN {OFS="\t"} NR > 1 && $6 >= 0 {print "1", $1, $3, $2, $4, $7}' ../pedigree.txt > simu.fam
 LC_NUMERIC=C awk -F'\t' 'NR==2 {divisor = $3} NR > 1 {print $2, $1, $3, $3*10/divisor, $4, $5}' OFS='\t' ../SNP_INFO.txt > simu.bim
 ## there are 100 individuals in the founders, to adapt to the simulations
-head -n 101 ../genotype.txt | awk 'NR > 1 { $1=""; print substr($0,2) }'  | tr -s ' ' '\t' | \
+cat ../genotype.txt | awk 'NR > 1 { $1=""; print substr($0,2) }'  | tr -s ' ' '\t' | \
 awk '
 BEGIN { 
     FS = OFS = "\t" 
