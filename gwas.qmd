@@ -11,7 +11,7 @@ format:
 editor: visual
 execute:
   freeze: auto
-  cache: true
+  #cache: true
 ---
 
 ```{r echo=FALSE, message=FALSE}
@@ -140,9 +140,12 @@ ggplot(lm.res) +
 
 ### High density GWAS
 
+We now simulate a denser dataset by increasing the number of markers and reducing
+the genetic length to a size of 10 centiMorgans
+
 ```{bash, eval = FALSE}
 ## Simulate a dataset with 20000 markers per chromosome, one of which is a QTL
-python src/main.py -savedFolder 'gwas_simu2' -nQTL 1 -Lchr 20000 -LG 100 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
+python src/main.py -savedFolder 'gwas_simu2' -nQTL 1 -Lchr 20000 -LG 10 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5 -G 1 -N 100 -Npop 10000 -nTrait 1 -nChr 1 -mu 1e-5 >> out_gwas &
 ```
 
 
@@ -275,7 +278,7 @@ First, let's run some new simulations where our initial panmictic populations is
 
 ```{bash, eval = FALSE}
 ## RUN simulations with selection
-python src/main.py -savedFolder 'gwas_simu3' -nQTL 1 -Lchr 2000 -LG 100 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 1 -varW 0.01 -h2 0.5 -G 10 -N 100 -Npop 10000 -nTrait 1 -nChr 10 -mu 1e-5 >> out_gwas &
+python src/main.py -savedFolder 'gwas_simu3' -nQTL 1 -Lchr 2000 -LG 100 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 1 -varW 0.25 -h2 0.5 -G 10 -N 100 -Npop 10000 -nTrait 1 -nChr 10 -mu 1e-5 >> out_gwas &
 ```
 
 ```{r}
@@ -326,6 +329,10 @@ ggplot(lm.res) +
   geom_point(aes(x = snp_id, y = -log10(pval), shape = as.factor(qtl), col = as.factor(chr_id))) +
   geom_hline(yintercept = -log10(alpha / nsnp), col = "green")  # threshold corrected for the number of tests (i.e. number of SNPs tested)
 
+ggplot(lm.res) +
+  geom_point(aes(x = snp_id, y = -log10(pval), shape = as.factor(qtl), col = as.factor(chr_id))) +
+  geom_hline(yintercept = -log10(alpha / nsnp), col = "green") + ylim(0,20)
+
 # distribution of p-values
 hist(lm.res$pval, prob = TRUE, n = 100)
 ```
@@ -368,11 +375,11 @@ To account for populations structure, the simplest method is to use Principal Co
 
 pca <- svd(geno)
 
+nPC = 20 # number of PC to use
 ## looking at Eigen Values, decide on a number of component to include
-plot(100 * pca$d / sum(pca$d), xlab = "PC", ylab = "% Variance explained (GRM)", xlim = c(1, 20), type = "h")
+plot(100 * pca$d / sum(pca$d), xlab = "PC", ylab = "% Variance explained (GRM)", xlim = c(1, nPC), type = "h")
 
 ## add these components in the lm
-nPC <- 20 # number of PC to use
 # association testing
 lm.res.pca <- apply(geno, 2, function(x) summary(lm(ped$pheno1 ~ pca$u[, 1:nPC] + x))$coeff[nPC + 2, ])
 # reformat the result
@@ -387,7 +394,7 @@ nsnp <- nrow(lm.res.pca)
 
 ggplot(lm.res.pca) +
   geom_point(aes(x = snp_id, y = -log10(pval), shape = as.factor(qtl), col = as.factor(chr_id))) +
-  geom_hline(yintercept = -log10(0.05 / nsnp), col = "green")  ## threshold corrected for the number of tests (i.e. number of SNPs tested)
+  geom_hline(yintercept = -log10(0.05 / nsnp), col = "green") + ylim(0,20) ## threshold corrected for the number of tests (i.e. number of SNPs tested)
 
 
 # distribution of p-values
@@ -481,8 +488,7 @@ ggplot(lm.res) +
   scale_colour_manual(values = c("0" = "black", "1" = "red"))
 
 ggplot(lm.res) +
-  geom_point(aes(x = snp_id, y = -log10(pval), shape = as.factor(qtl), col = as.factor(chr_id))) 
-
+  geom_point(aes(x = snp_id, y = -log10(pval), shape = as.factor(qtl), col = as.factor(chr_id)))
 # distribution of p-values
 hist(lm.res$pval, breaks = 100, prob = TRUE)
 
@@ -500,6 +506,7 @@ q-values
 qval <- qvalue(p = lm.res$pval)
 summary(qval) ## pi0: overall proportion of true null hypothesis (beta = 0)
 plot(qval)
+th.fdr = max(qval$pvalues[qval$qvalues<0.05])
 # plot(-log10(qval$pvalues), -log10(qval$qvalues))
 #
 # lm.res$qval <- qval$qvalues
@@ -510,6 +517,12 @@ plot(qval)
 #
 # ## distribution of q-values
 # hist(lm.res$qval, prob = TRUE)
+ggplot(lm.res) + 
+  geom_point(aes(x = snp_id, y = -log10(pval), shape = as.factor(qtl), col = as.factor(chr_id))) +
+  geom_hline(yintercept = -log10(alpha / nsnp), col = "green") +
+  geom_hline(yintercept = -log10(th.fdr), col='red')
+  
+
 ```
 
 ashr
@@ -520,13 +533,17 @@ summary(beta.ash)
 
 lm.res$beta_ash <- beta.ash$result$PosteriorMean
 lm.res$qval_ash <- beta.ash$result$qvalue
+th.ash = max(lm.res$pval[lm.res$qval_ash<0.05])
 
 ggplot(lm.res) +
   geom_point(aes(x = beta_hat, beta_ash, col = as.factor(qtl))) +
   scale_colour_manual(values = c("0" = "black", "1" = "red"))
 
 ggplot(lm.res) +
-  geom_point(aes(x = snp_id, y = -log10(qval_ash), shape = as.factor(qtl), col = as.factor(chr_id))) 
+  geom_point(aes(x = snp_id, y = -log10(pval), shape = as.factor(qtl), col = as.factor(chr_id))) +
+  geom_hline(yintercept = -log10(alpha / nsnp), col = "green") +
+  geom_hline(yintercept = -log10(th.fdr), col='red') + 
+  geom_hline(yintercept = -log10(th.ash), col='blue') 
 ```
 
 ## Polygenic model
@@ -551,8 +568,8 @@ ped$generation <- factor(as.character(ped$generation), levels = as.character(sor
 # genotypes
 geno <- read.table("simulations/gwas_simu5/genotype.txt", header = TRUE, sep = "\t", stringsAsFactors = FALSE, row.names = 1, check.names = FALSE)
 
-## only look at the initial generation
-indKeep <- which(ped$generation == 0)
+## assume we haave the last three generations
+indKeep <- which(ped$generation > 6)
 ped <- ped[indKeep, ]
 geno <- geno[indKeep, ]
 
@@ -592,8 +609,17 @@ rrBLUP
 rrblup.res <- mixed.solve(y = ped$pheno1, Z = as.matrix(geno)) ## by default K = I
 lm.res$beta_blup <- rrblup.res$u
 
+
+ggplot(lm.res, aes(x = beta, y = beta_hat)) +
+  geom_point(alpha=0.1) +
+  geom_abline()
+
+ggplot(lm.res, aes(x = beta, y = beta_blup)) +
+  geom_point(alpha=0.1) +
+  geom_abline()
+
 ggplot(lm.res, aes(x = beta_hat, y = beta_blup)) +
-  geom_point() +
+  geom_point(alpha=0.1) +
   geom_abline()
 ```
 
@@ -625,7 +651,8 @@ ggplot(gaston.res) +
 
 lm.res$beta_gaston <- gaston.res$beta
 ggplot(lm.res) +
-  geom_point(aes(x = beta_hat, y = beta_gaston))
+  geom_point(aes(x = beta_hat, y = beta_gaston)) +
+  geom_abline()
 ```
 
 
@@ -640,10 +667,11 @@ mkdir gemma
 cd gemma
 
 ## as input, need .fam, .bim and .bed files
-awk 'BEGIN {OFS="\t"} NR > 1 && $6 >= 0 {print "1", $1, $3, $2, $4, $7}' ../pedigree.txt > simu.fam
+awk 'BEGIN {OFS="\t"} NR > 1 && $6 >= 7 {print "1", $1, $3, $2, $4, $7}' ../pedigree.txt > simu.fam
+NI=`wc -l simu.fam  | cut -f 1 -d ' '` 
 LC_NUMERIC=C awk -F'\t' 'NR==2 {divisor = $3} NR > 1 {print $2, $1, $3, $3*10/divisor, $4, $5}' OFS='\t' ../SNP_INFO.txt > simu.bim
 ## there are 100 individuals in the founders, to adapt to the simulations
-cat ../genotype.txt | awk 'NR > 1 { $1=""; print substr($0,2) }'  | tr -s ' ' '\t' | \
+tail -n $((NI+1)) ../genotype.txt  | awk 'NR > 1 { $1=""; print substr($0,2) }'  | tr -s ' ' '\t' | \
 awk '
 BEGIN { 
     FS = OFS = "\t" 
@@ -658,9 +686,15 @@ END {
         print substr(a[i], 1, length(a[i]) - 1)
     }
 }
-' > simu.txt 
+'  > simu.txt
 ## then use ldak (cf Genomic Prediction practical) to generate the .bed file
 ldak6 --make-bed simu2 --gen simu.txt --bim simu.bim --fam simu.fam --gen-skip 0 --gen-headers 0 --gen-probs 1 --threshold 1
+
+## fitlinear mixed model 
+### compute GRM
+gemma -bfile simu2 -gk 1
+### LRT 
+gemma -bfile simu2 -lmm 2 -k output/result.cXX.txt
 
 ## run gemma (installed using conda)
 gemma -bfile simu2 -bslmm 1
@@ -677,7 +711,7 @@ colnames(gemma.res) <- c("chr", "rs", "ps", "n_miss", "alpha_gemma", "beta_gemma
 lm.res$rs <- as.numeric(row.names(lm.res))
 data <- merge(lm.res, gemma.res)
 
-ggplot(data, aes(x = beta_hat, y = alpha_gemma + beta_gemma)) +
+ggplot(data, aes(x = beta, y = alpha_gemma + beta_gemma )) +
   geom_point() +
   geom_abline()
 ```
