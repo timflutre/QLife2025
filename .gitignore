@@ -8,3 +8,4 @@ simulations/example_data.tar.gz
 simulations/gwas*
 simulations/out_gwas
 gwas_files/
+gwas_cache/
