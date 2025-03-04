@@ -26,6 +26,11 @@ And activate the environment to run the simulations
 conda activate qlife_simu                                                                  
 ```
 
+If needed, the environment can be updated:
+```
+conda env update --file simu_env.yml --prune
+```
+
 ### Usage
 
 Run the simulator, with the default values for the parameters: 
@@ -125,3 +130,9 @@ the alternative allele can be NA if the site is monomorphic (which can happen de
 - IBD.txt: origin of the alleles of the individuals of the forward-in-time phase (via the id of the founder - i.e. g = 0 - with a sign (+ or -) to indicate the chromosome of origin); the first column is the ind_id and the second column is the homologous chromosome (dim = 2*N*(G+1) x (L+2)); the first line is the SNP ID 
 
 
+
+### Deactivation
+
+```
+conda deactivate
+```
