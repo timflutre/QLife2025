@@ -292,7 +292,16 @@ if __name__ == '__main__':
                 qtlLeft -= 1
     
      
-    L0 = [round(prop0*Lchr) for i in range(nChr)] ## number of QTL drawn from distribution 0 (varEffect0) per chromosome
+    if Lchr > 1: 
+        L0 = [round(prop0*Lchr) for i in range(nChr)] ## number of QTL drawn from distribution 0 (varEffect0) per chromosome
+    
+    ## if there is only one marker per chromosome
+    ## consider all chromosomes together
+    ## (if less than 10, then the proportion of QTLs cannot be correctly represented on a per-chromosome basis)
+    if Lchr == 1: 
+        L0 = round(prop0*(L-nQTLChr))
+        L0 = list(np.random.choice([0]*(L-L0) + [1]*L0, L, replace = False))
+    
     qtl = [random.sample([0]*(Lchr-L0[i]) + [2]*L0[i], Lchr) for i in range(nChr)] ## assign a "type" to each site: 0 = neutral sites, 1 = QTL, 2 = QTL second distribution of effects
     ## force the major QTLs to be a SNP
     for ichr in range(nChr):
