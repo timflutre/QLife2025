@@ -15,7 +15,7 @@ execute:
   cache: true
 ---
 
-```{r echo=FALSE, message=FALSE}
+```{r setup, include=FALSE, echo=FALSE, message=FALSE}
 library(tidyverse)
 library(ggbeeswarm)
 library(broom)
@@ -28,7 +28,7 @@ library(gaston)
 theme_set(theme_minimal())
 ```
 
-# Main objective
+# Introduction
 
 Studying the **genetic architecture** of complex (quantitative) traits aims at **idenfitying polymorphisms** (number, genomic locations, effects) affecting the phenotypic differences between individuals.
 
@@ -80,7 +80,7 @@ The association results we will work with are:
 
 Although this appears simple enough, devil is in the details, and today we will be looking into how to deal with them in order to perform a robust yet powerful GWAS.
 
-# Testing for association with a single QTL
+# Single Locus Test
 
 ## Linkage Disequilibrium and marker density
 
@@ -503,8 +503,7 @@ abline(a = 0, b = 1, col = "red")
 
 In the situation were we might expect many underlying causal variant, calling significance based on FWER can affect our power to make new discoveries. If we are not going to biologically validate every single GWAS hit, we might use a different criterion to call significance: the **False Discovery Rate (FDR)**. 
 
-:::{.callout-note icon="False"}
-# FWER and FDR
+:::{.callout-note icon="False" title="FWER and FDR"}
 
 |       | Not Significant | Significant | Total |
 |-------|-----------------|-------------|-------|
@@ -528,9 +527,9 @@ errors in the test we declare significant
 ::: 
 
 Estimating the FDR involves modelling the relative proportions of true nulls and true alternatives in a **large set of tests**. 
-Different approaches have been proposed to this goal, notably the initial Benjamini-Hochberrg approach [(Benjamini and Hochberg, 1995)](https://doi.org/10.1111%2Fj.2517-6161.1995.tb02031.x), the qvalue approach of [Storey and Tibshirani (2003)](https://doi.org/10.1073/pnas.1530509100) (ST03) and the adaptive shrinkage of [Stephens (2017)](https://doi.org/10.1093/biostatistics/kxw041) (ASH). 
+Different approaches have been proposed to this goal, notably the initial Benjamini-Hochberg approach [(Benjamini and Hochberg, 1995)](https://doi.org/10.1111%2Fj.2517-6161.1995.tb02031.x), the qvalue approach of [Storey and Tibshirani (2003)](https://doi.org/10.1073/pnas.1530509100) (ST03) and the adaptive shrinkage of [Stephens (2017)](https://doi.org/10.1093/biostatistics/kxw041) (ASH). 
 
-The ST03 approach to estimate FDR is based on the distribution of p-values. It is implemented in theR package `qvalue` available on [`Bioconductor`](https://bioconductor.org/). Here is how we can apply it to our GWAS results:
+The ST03 approach to estimate FDR is based on the distribution of p-values. It is implemented in the R package `qvalue` available on [`Bioconductor`](https://bioconductor.org/). Here is how we can apply it to our GWAS results:
 
 ```{r}
 qval <- qvalue(p = lm.res.4$pval)
@@ -564,31 +563,43 @@ ggplot(lm.res.4) +
 
 On these data the two FDR methods should allow to call a few more SNPs significant compared to the Bonferroni control of FWER. ST03 and ASH can give different results on some datasets.
 
-Both approaches can estimate the proportion of null hypotheses in the data, ST03 give $\pi_0$ = `qval$pi0` = `r round(qval$pi0,digits=3)` while ASH gives `r round(beta.ash$fitted_g$pi[1],digits=3)` while our simulations included 99% true negatives. Note that because of LD, the estimates of ST03 and ASH can be biased downwards as true negatives can still be correlated to true positives.
+Both approaches can estimate the proportion of null hypotheses in the data, ST03 give $\pi_0$ = `qval$pi0` = `r round(qval$pi0,digits=3)` and ASH gives `r round(beta.ash$fitted_g$pi[1],digits=3)` while our simulations included 99% true negatives. Note that because of LD, the estimates of ST03 and ASH can be biased downwards as true negatives can still be correlated to true positives.
 
 :::{.callout-note}
 In addition to estimating FDR, the ASH method provides new estimates of the marker effects (see more on that below).
 ```{r}
 ggplot(lm.res.4) +
   geom_point(aes(x = beta_hat, beta_ash, col = as.factor(qtl))) +
-  scale_colour_manual(values = c("0" = "black", "1" = "red"))
+  scale_colour_manual(values = c("0" = "black", "1" = "red")) + 
+  geom_abline()
 ```
+ASH indeed shrinks single marker estimates close to zero except for a few loci, QTLs, for which it is more confident in the effect.
 :::
 
 ## Polygenic model
 
 ### Simulations
 
+In this section we will simulate a full polygenic (omnigenic) model where every polymorphism has an effect on the trait but some of them have potentially larger effects. For this, we simulate data using a *Bayesian Sparse Linear Mixed Model* (see [Zhou et al. (2013)](https://doi.org/10.1371/journal.pgen.1003264)):
+
+$$
+y_i = \mu + u_i + \mathbf{x_i}\mathbf{\tilde{\beta}} + e_i
+$$
+where $u_i \sim \mathcal{N}(0,\mathbf{K}\sigma^2_u)$ captures the polygenic effects of all markers (see the animal model and genomic prediction workshops) and 
+$$
+\tilde{\beta_q} \sim \pi\mathcal{N}(0,\sigma^2_b) + (1-\pi)\delta_0 
+$$
+captures the additional effects of some large QTLs:  a proporition $\pi$ of the polymorphisms have an additional effect drawn from a normal distribution, while the rest have zero ($\delta_0$) additional effects.
+
 ```{bash, eval=FALSE}
 # some QTLs with large effects + QTLs with weak effects 
 python src/main.py -savedFolder 'gwas_simu5' -nQTL 100 -Lchr 2000 -LG 100 -varEffect 100.0 -proportion0 1.0 -varEffect0 0.01 -optim 0.2 -varW 1 -h2 0.5 -G 10 -N 100 -Npop 10000 -nTrait 1 -nChr 10 -mu 1e-5 >> out_gwas &
 ```
 
-Read in data:
+Read the data in:
 
 ```{r}
 ## load the data
-## setwd("simulations/gwas_simu4")
 
 # load the data
 # pedigree information, also contains the phenotypes and breeding values
@@ -691,8 +702,8 @@ gemma (bslmm)
 ## reformat the input data
 ## to get the needed format
 
-mkdir gemma
-cd gemma
+mkdir -p simulations/gwas_simu5/gemma
+cd simulations/gwas_simu5/gemma
 
 ## as input, need .fam, .bim and .bed files
 awk 'BEGIN {OFS="\t"} NR > 1 && $6 >= 7 {print "1", $1, $3, $2, $4, $7}' ../pedigree.txt > simu.fam
@@ -741,4 +752,21 @@ data <- merge(lm.res.5, gemma.res)
 ggplot(data, aes(x = beta, y = alpha_gemma + beta_gemma)) +
   geom_point() +
   geom_abline()
+```
+
+### Estimate distribution of effects from summary statistics
+
+An alternative to using BSLMM is to fit the QTL distribution on the summary statistics with ASH:
+
+```{r}
+gaston.ash <- ash(gaston.res$beta, gaston.res$sd)
+summary(gaston.ash)
+
+lm.res.5$beta_gaston_ash <- gaston.ash$result$PosteriorMean
+lm.res.5$qval_gaston_ash <- gaston.ash$result$qvalue
+th.ash = max(lm.res.5$pval[lm.res.5$qval_gaston_ash<0.05])
+
+ggplot(lm.res.5) +
+  geom_point(aes(x = beta_gaston, beta_gaston_ash)) +
+  scale_colour_distiller()
 ```
