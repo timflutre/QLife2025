@@ -419,7 +419,7 @@ First, we will be considering a situation were there are multiple but still rela
 
 ### Simulations
 
-First, we will simulate a larger (n=1000) sample from a panmictic population of effective size $Ne = 10 000$. We will simulate arount 10,000 polymorphisms out of which only about 100 are going to be QTLs. The overall heritability of the trait is set to 50%.
+First, we will simulate a larger (n=1000) sample from a panmictic population of effective size $Ne = 10 000$. We will simulate around 10,000 polymorphisms out of which 100 are going to be QTLs. The overall heritability of the trait is set to 50%.
 
 ```{bash, eval = FALSE}
 ## Simulations for the multi-QTLs
@@ -428,11 +428,18 @@ python src/main.py -savedFolder 'gwas_simu4' -nQTL 100 -Lchr 2000 -LG 100 -varEf
 
 ```
 
+The model we are simulating from is :
+
+$$
+y_i = \sum_{q=1}^{100} x_{iq}\beta_q + e_i = u_i + e_i
+$$
+with the QTL effects $\beta_q \sim \mathcal{N}(0,\sigma_b^2)$ and $h^2 = Var(\mathbf{u})/Var(\mathbf{y}) = 0.5$
+
+### GWAS
 As before, we read in the data from the simulation results.
 
 ```{r}
 ## load the data
-## setwd("simulations/gwas_simu4")
 
 # load the data
 # pedigree information, also contains the phenotypes and breeding values
@@ -464,78 +471,109 @@ As the population is panmictic, we can expect individuals to be approximately un
 ## linear regression
 
 # association: linear regression, independently for each markers
-lm.res <- apply(geno, 2, function(x) summary(lm(ped$pheno1 ~ x))$coeff[2, ])
+lm.res.4 <- apply(geno, 2, function(x) summary(lm(ped$pheno1 ~ x))$coeff[2, ])
 # reformat the result for easier plotting
-lm.res <- as.data.frame(t(lm.res))
-colnames(lm.res) <- c("beta_hat", "se", "tstat", "pval")
-lm.res$beta <- snp$beta_trait_1
-lm.res$snp_id <- snp$snp_id
-lm.res$chr_id <- snp$chr_id
-lm.res$qtl <- 0
-lm.res$qtl[lm.res$beta != 0] <- 1
-nsnp <- nrow(lm.res)
+lm.res.4 <- as.data.frame(t(lm.res.4))
+colnames(lm.res.4) <- c("beta_hat", "se", "tstat", "pval")
+lm.res.4$beta <- snp$beta_trait_1
+lm.res.4$snp_id <- snp$snp_id
+lm.res.4$chr_id <- snp$chr_id
+lm.res.4$qtl <- 0
+lm.res.4$qtl[lm.res.4$beta != 0] <- 1
+nsnp <- nrow(lm.res.4)
 
-ggplot(lm.res) +
+ggplot(lm.res.4) +
   geom_point(aes(x = beta, y = beta_hat, col = as.factor(qtl))) +
   scale_colour_manual(values = c("0" = "black", "1" = "red"))
 
-ggplot(lm.res) +
+ggplot(lm.res.4) +
   geom_point(aes(x = snp_id, y = -log10(pval), shape = as.factor(qtl), col = as.factor(chr_id)))
 # distribution of p-values
-hist(lm.res$pval, breaks = 100, prob = TRUE)
+hist(lm.res.4$pval, breaks = 100, prob = TRUE)
 
 ## qqplot
-qqnorm(lm.res$tstat) ## t-stat
-qqline(lm.res$tstat, col = "red")
+qqnorm(lm.res.4$tstat) ## t-stat
+qqline(lm.res.4$tstat, col = "red")
 ## qqplot for -log10(pval)
-qqplot(-log10(ppoints(nsnp)), -log10(lm.res$pval), xlab = "theoretical", ylab = "observed", main = "Q-Q Plot for -log10 Pval")
+qqplot(-log10(ppoints(nsnp)), -log10(lm.res.4$pval), xlab = "theoretical", ylab = "observed", main = "Q-Q Plot for -log10 Pval")
 abline(a = 0, b = 1, col = "red")
 ```
 
 ### Multiple Testing: False Discovery Rate
 
-q-values
+In the situation were we might expect many underlying causal variant, calling significance based on FWER can affect our power to make new discoveries. If we are not going to biologically validate every single GWAS hit, we might use a different criterion to call significance: the **False Discovery Rate (FDR)**. 
+
+:::{.callout-note icon="False"}
+# FWER and FDR
+
+|       | Not Significant | Significant | Total |
+|-------|-----------------|-------------|-------|
+| $H_0$ | U               | V[^2]       | $m_0$ |
+| $H_1$ | T[^3]           | S           | $m_1$ |
+|       | $m-R$           | $R$         | $m$   |
+
+[^2]: Type I Errors
+
+[^3]: Type II Errors
+
+When we perform many ($m$) tests, we may want to control the amount of
+errors in the test we declare significant
+
+1.  If an error is **costly** (*e.g.* experimental validation or big
+    claim), we want $P(V\geq 1)$ to be small = **Family Wise Error
+    Rate**
+2.  If a few errors are acceptable, we can increase the number of
+    significant decisions by controlling $\frac{V}{R}$ = **False
+    Discovery Rate**
+::: 
+
+Estimating the FDR involves modelling the relative proportions of true nulls and true alternatives in a **large set of tests**. 
+Different approaches have been proposed to this goal, notably the initial Benjamini-Hochberrg approach [(Benjamini and Hochberg, 1995)](https://doi.org/10.1111%2Fj.2517-6161.1995.tb02031.x), the qvalue approach of [Storey and Tibshirani (2003)](https://doi.org/10.1073/pnas.1530509100) (ST03) and the adaptive shrinkage of [Stephens (2017)](https://doi.org/10.1093/biostatistics/kxw041) (ASH). 
+
+The ST03 approach to estimate FDR is based on the distribution of p-values. It is implemented in theR package `qvalue` available on [`Bioconductor`](https://bioconductor.org/). Here is how we can apply it to our GWAS results:
 
 ```{r}
-qval <- qvalue(p = lm.res$pval)
+qval <- qvalue(p = lm.res.4$pval)
 summary(qval) ## pi0: overall proportion of true null hypothesis (beta = 0)
 plot(qval)
 th.fdr <- max(qval$pvalues[qval$qvalues < 0.05])
-# plot(-log10(qval$pvalues), -log10(qval$qvalues))
-#
-# lm.res$qval <- qval$qvalues
-#
-# ggplot(lm.res) +
-#   geom_point(aes(x = snp_id, y = -log10(qval), col = as.factor(qtl))) +
-#   scale_colour_manual(values = c("0" = "black", "1" = "red"))
-#
-# ## distribution of q-values
-# hist(lm.res$qval, prob = TRUE)
-ggplot(lm.res) +
+
+ggplot(lm.res.4) +
   geom_point(aes(x = snp_id, y = -log10(pval), shape = as.factor(qtl), col = as.factor(chr_id))) +
-  geom_hline(yintercept = -log10(alpha / nsnp), col = "green") +
+  geom_hline(yintercept = -log10(0.05 / nsnp), col = "green") +
   geom_hline(yintercept = -log10(th.fdr), col = "red")
 ```
 
-ashr
+The ASH approach, implemented in the `ashr` R package is based on the joint distribution of effect estimates and their standard errors. Here is how we can apply it to our GWAS results:
 
 ```{r}
-beta.ash <- ash(lm.res$beta_hat, lm.res$se)
+beta.ash <- ash(lm.res.4$beta_hat, lm.res.4$se)
 
-lm.res$beta_ash <- beta.ash$result$PosteriorMean
-lm.res$qval_ash <- beta.ash$result$qvalue
-th.ash <- max(lm.res$pval[lm.res$qval_ash < 0.05])
+lm.res.4$beta_ash <- beta.ash$result$PosteriorMean
+lm.res.4$qval_ash <- beta.ash$result$qvalue
+th.ash <- max(lm.res.4$pval[lm.res.4$qval_ash < 0.05])
+```
 
-ggplot(lm.res) +
-  geom_point(aes(x = beta_hat, beta_ash, col = as.factor(qtl))) +
-  scale_colour_manual(values = c("0" = "black", "1" = "red"))
-
-ggplot(lm.res) +
+```{r}
+ggplot(lm.res.4) +
   geom_point(aes(x = snp_id, y = -log10(pval), shape = as.factor(qtl), col = as.factor(chr_id))) +
   geom_hline(yintercept = -log10(alpha / nsnp), col = "green") +
   geom_hline(yintercept = -log10(th.fdr), col = "red") +
   geom_hline(yintercept = -log10(th.ash), col = "blue")
 ```
+
+On these data the two FDR methods should allow to call a few more SNPs significant compared to the Bonferroni control of FWER. ST03 and ASH can give different results on some datasets.
+
+Both approaches can estimate the proportion of null hypotheses in the data, ST03 give $\pi_0$ = `qval$pi0` = `r round(qval$pi0,digits=3)` while ASH gives `r round(beta.ash$fitted_g$pi[1],digits=3)` while our simulations included 99% true negatives. Note that because of LD, the estimates of ST03 and ASH can be biased downwards as true negatives can still be correlated to true positives.
+
+:::{.callout-note}
+In addition to estimating FDR, the ASH method provides new estimates of the marker effects (see more on that below).
+```{r}
+ggplot(lm.res.4) +
+  geom_point(aes(x = beta_hat, beta_ash, col = as.factor(qtl))) +
+  scale_colour_manual(values = c("0" = "black", "1" = "red"))
+```
+:::
 
 ## Polygenic model
 
@@ -697,8 +735,8 @@ gemma -bfile simu2 -bslmm 1
 gemma.res <- read.table("simulations/gwas_simu5/gemma/output/result.param.txt", header = TRUE)
 colnames(gemma.res) <- c("chr", "rs", "ps", "n_miss", "alpha_gemma", "beta_gemma", "gamma_gemma")
 
-lm.res$rs <- as.numeric(row.names(lm.res))
-data <- merge(lm.res, gemma.res)
+lm.res.5$rs <- as.numeric(row.names(lm.res.5))
+data <- merge(lm.res.5, gemma.res)
 
 ggplot(data, aes(x = beta, y = alpha_gemma + beta_gemma)) +
   geom_point() +
