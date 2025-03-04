@@ -78,14 +78,14 @@ def saveLineage(pop, param):
 
 ## function to test the value of the parameters inputed
 ## if they do not correspond, then exit the simulation
-def testParameters(h2, h2_others, nTrait, prop0, nQTLChr, Lchr, varEffect0, signCor):
+def testParameters(h2, h2_others, nTrait, prop0, nQTLChr, nChr, Lchr, varEffect0, signCor):
     if h2 <= 0:
         sys.exit('Null heritability is not allowed')
     if len(h2_others) != (nTrait-1):
         sys.exit('Not enough heritabilities defined: each trait need to have a h2')
     if (prop0 > 1.0) or (prop0 < 0.0):
         sys.exit('the proportion of SNPs that are from another distribution need to be between 0 - i.e. all SNPs are either QTLs with effects from the same distribution or neutral - and 1 - i.e. all SNPs have an effect from a gaussian distribution with variance varEffect0')
-    if (nQTLChr + round(prop0*(Lchr-nQTLChr))) > Lchr:
+    if (nQTLChr + round(prop0*(nChr*Lchr-nQTLChr))) > nChr*Lchr:
         sys.exit('cannot have more QTLs than sites')
     if (signCor != 'pos') and (signCor != 'neg'):
         sys.exit('the sign of the correlation between two traits can either pos or neg')
@@ -172,7 +172,7 @@ if __name__ == '__main__':
     varEffect = float(parameters['varEffect'])
     signCor = parameters['signCor']
     
-    testParameters(h2, h2_others, nTrait, prop0, nQTLChr, Lchr, varEffect0, signCor)
+    testParameters(h2, h2_others, nTrait, prop0, nQTLChr, nChr, Lchr, varEffect0, signCor)
     
     if nTrait > 1:
         corTrait = float(parameters['corTrait'])
@@ -292,7 +292,16 @@ if __name__ == '__main__':
                 qtlLeft -= 1
     
      
-    L0 = [round(prop0*Lchr) for i in range(nChr)] ## number of QTL drawn from distribution 0 (varEffect0) per chromosome
+    if Lchr > 1: 
+        L0 = [round(prop0*Lchr) for i in range(nChr)] ## number of QTL drawn from distribution 0 (varEffect0) per chromosome
+    
+    ## if there is only one marker per chromosome
+    ## consider all chromosomes together
+    ## (if less than 10, then the proportion of QTLs cannot be correctly represented on a per-chromosome basis)
+    if Lchr == 1: 
+        L0 = round(prop0*(L-nQTLChr))
+        L0 = list(np.random.choice([0]*(L-L0) + [1]*L0, L, replace = False))
+    
     qtl = [random.sample([0]*(Lchr-L0[i]) + [2]*L0[i], Lchr) for i in range(nChr)] ## assign a "type" to each site: 0 = neutral sites, 1 = QTL, 2 = QTL second distribution of effects
     ## force the major QTLs to be a SNP
     for ichr in range(nChr):
