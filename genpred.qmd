@@ -623,8 +623,8 @@ ldak6 --make-bed simu2 --gen simu.txt --bim simu.bim --fam simu.fam --gen-skip 0
 Finally, run LDAK on these files. 
 ```{bash}
 ## calculate the weights
-ldak6 --cut-weights "$dirOUT"LDAK/simu_freq --bfile "$dirOUT"LDAK/simu2
-ldak6 --calc-weights-all "$dirOUT"LDAK/simu_freq --bfile "$dirOUT"LDAK/simu2 
+ldak6 --cut-weights simu_freq --bfile simu2
+ldak6 --calc-weights-all simu_freq --bfile simu2 
 
 ## calculate the GRM
 ldak6 --calc-kins-direct LDAKgmat_freq --bfile simu2 --weights simu_freq/weights.short --power -.25 --kinship-raw YES
