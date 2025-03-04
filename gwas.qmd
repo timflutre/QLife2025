@@ -15,7 +15,7 @@ execute:
   cache: true
 ---
 
-```{r setup, include=FALSE, echo=FALSE, message=FALSE}
+```{r setup, message=FALSE}
 library(tidyverse)
 library(ggbeeswarm)
 library(broom)
