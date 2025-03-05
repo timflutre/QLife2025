@@ -88,9 +88,12 @@ More generally, the genetic variance component, $\sigma_u^2$, corresponds to the
 
 The **mixed model equations** (MMEs) are used to obtain formulas for the best linear unbiased estimator (BLUE) of the fixed effects, and the **best linear unbiased predictor** (BLUP) of the random effects: $BLUP(\boldsymbol{u}) = G Z^T V^{-1} (\boldsymbol{y} - X \boldsymbol{\beta})$ where $V := Var(\boldsymbol{y}) = Z G Z^T + R$. When the estimates of the variance components are used, the so-called empirical BLUPs (eBLUPs) can be computed.
 
-The additive genetic values of unphenotyped individuals can be predicted as long as their additive genetic relationships with phenotyped individuals are known (pedigree).
-
-TODO: add formula (Henderson 1977, Searle et al 1992/2006, supp 1 of Lopez-Cruz 2021)
+The additive genetic values of unphenotyped individuals can be predicted as long as their additive genetic relationships with phenotyped individuals, $G_{trn,tst}$, are known.
+Indeed, following [Henderson (1977)](https://linkinghub.elsevier.com/retrieve/pii/S0022030277839350) and [Lopez-Cruz and De Los Campos (2021)](https://academic.oup.com/genetics/article/doi/10.1093/genetics/iyab030/6179494), let partition the data set into a training (trn) and testing (tst) set.
+The objective is to predict the genetic values of the individuals in the testing set ($\boldsymbol{u}_{tst}$) using the phenotype data available from the training set ($\boldsymbol{y}_{trn}$).
+The best linear predictor is: \begin{align}
+\hat{\boldsymbol{u}}_{tst} = G^T_{trn,tst} (G_{trn} + \lambda I)^{-1} \boldsymbol{y}_{trn}
+\end{align}
 
 ## Mendelian deviations
 
@@ -123,12 +126,10 @@ It plays a key role because the response to selection after one generation equal
 
 ## Simulation scenarios
 
-In all scenarios, first, a neutral coalescent is used as a burn-in phase to simulate a population (with `msprime`), then 10 generations of selection are done via forward-in-time simulations (with `simuPOP`).
-The population size is constant, with 100 individuals selected at each generation.
+In all scenarios, first, a neutral coalescent is used as a burn-in phase to simulate a population (with `msprime`), then 10 generations are done via forward-in-time simulations (with `simuPOP`). The population size is constant, with 100 individuals at each generation.
 
-For each scenario, two correlated traits are simulated.
-Both traits are in complete pleiotropy, and the effect of their QTLs are correlated.
-The first trait has a medium heritability and is directly under selection, whereas the second has a high heritability but is indirectly under selection.
+For each scenario, two correlated traits are simulated. Both traits are in complete pleiotropy, and the effect of their QTLs are correlated. The first trait has a medium heritability whereas the second has a high heritability.
+In scenarios with selection, only the first trait is directly under selection, the second being indirectly selected.
 
 ## Simulation outputs
 
@@ -144,38 +145,42 @@ Each simulation provides different types of data, similar to what is usually ava
 
 For more detailed information about the simulations, see the file `simulations/readme.md`.
 
-## Simulation 1: infinitesimal trait, with linkage
+## Simulation 1
+
+All SNPs have an effect, i.e., they are QTLs; with linkage; without selection
 
 ```{bash, eval=FALSE}
 conda activate qlife_simu
 cd simulations
-
-# readme "linkage; polygenic trait"
-# python src/main.py -savedFolder 'genpred_simu1' -nQTLChr 1000 -Lchr 1000 -LG 100 -varEffect 1.0 -proportion0 0.0 -varEffect0 0.0 -optim 0 -varW 100 -h2 0.5,0.9 -G 10 -N 100 -Npop 10000 -nTrait 2 -corTrait 0.9 -signCor 'neg' -nChr 5 -mu 1e-5 >> out_genpred &
-
-python src/main.py -savedFolder "genpred_simul1" -optim 0 -varW 100 -G 10 -N 100 -Npop 10000 -h2 0.5,0.9 -nTrait 2 -nChr 5 -Lchr 1000 -nQTLChr 1000 -LG 100 -mu 1e-5 -proportion0 0.0 -varEffect 1.0 -varEffect0 0.0 -corTrait 0.9 -signCor 'neg' >> out_genpred1 &
-
-# TD GWAS:
-# python src/main.py -savedFolder 'gwas_simu5' -nQTL 100 -Lchr 2000 -LG 100 -varEffect 100.0 -proportion0 1.0 -varEffect0 0.01 -optim 0.2 -varW 1 -h2 0.5 -G 10 -N 100 -Npop 10000 -nTrait 1 -nChr 10 -mu 1e-5 >> out_gwas &
-
-#python src/main.py -savedFolder "genpred_simul1" -optim 0.2 -varW 1 -G 10 -N 100 -Npop 10000 -h2 0.5,0.9 -nTrait 2 -nChr 10 -Lchr 2000 -nQTLChr 100 -LG 100 -mu 1e-5 -proportion0 0.0 -varEffect 1.0 -varEffect0 1.0 -corTrait 0.5 -signCor 'pos' >> out_genpred1 &
+python src/main.py -savedFolder "genpred_simul1" -optim 0 -varW 10 -G 10 -N 100 -Npop 10000 -h2 0.5,0.9 -nTrait 2 -nChr 5 -Lchr 1000 -LG 100 -mu 1e-5 -proportion0 1.0 -varEffect0 1.0 -nQTL 0 -varEffect 0.0 -corTrait 0.9 -signCor 'neg' >> out_genpred1 &
 ```
 
 ## Simulation 2
 
+All SNPs have an effect, i.e., they are QTLs; with linkage; with selection
+
 ```{bash, eval=FALSE}
 conda activate qlife_simu
 cd simulations
-python src/main.py -savedFolder "genpred_simul2" TODO...
+python src/main.py -savedFolder "genpred_simul2" -optim 5 -varW 10 -G 10 -N 100 -Npop 10000 -h2 0.5,0.9 -nTrait 2 -nChr 5 -Lchr 1000 -LG 100 -mu 1e-5 -proportion0 1.0 -varEffect0 1.0 -nQTL 0 -varEffect 0.0 -corTrait 0.9 -signCor 'neg' >> out_genpred2 &
 ```
 
+## Simulation 3
+
+All SNPs have an effect, i.e., they are QTLs, but some have a bigger effect than others; with linkage; with selection
+
+```{bash, eval=FALSE}
+conda activate qlife_simu
+cd simulations
+python src/main.py -savedFolder "genpred_simul3" -optim 5 -varW 10 -G 10 -N 100 -Npop 10000 -h2 0.5,0.9 -nTrait 2 -nChr 5 -Lchr 2000 -LG 100 -mu 1e-5 -proportion0 1.0 -varEffect0 0.01 -nQTL 100 -varEffect 100.0 -corTrait 0.9 -signCor 'neg' >> out_genpred3 &
+```
 
 <!-- ==================================================================== -->
 
 # Load all the data
 
 ```{r}
-simulDir <- "genpred_simul1"
+simulDir <- "genpred_simul2"
 ```
 
 ## Pedigree
@@ -225,6 +230,7 @@ for(traitNum in 1:2){
     aes(x=.data[[paste0("pheno",traitNum)]]) +
     geom_histogram(bins=30, color="white") +
     labs(title=paste0("Trait ", traitNum),
+         subtitle=simulDir,
          x="phenotypic value") +
     theme_bw()
   print(p)
@@ -234,6 +240,7 @@ for(traitNum in 1:2){
     geom_violin(trim=FALSE) +
     geom_boxplot(width=0.2) +
     labs(title=paste0("Trait ", traitNum),
+         subtitle=simulDir,
          y="phenotypic value") +
     theme_bw()
   print(p)
@@ -248,6 +255,7 @@ for(traitNum in 1:2){
     geom_vline(xintercept=0, linetype="dotted") +
     geom_point() +
     labs(title=paste0("Trait ", traitNum),
+         subtitle=simulDir,
          x="true breeding value", y="phenotypic value") +
     theme_bw()
   print(p)
@@ -297,8 +305,6 @@ IBDs[1:3, 1:8]
 
 ## True IBD relationships
 
-TODO: see refs in Lee and Werf (2006)
-
 ### Function
 
 ```{r}
@@ -338,6 +344,7 @@ getGRMibd <- function(IBDs){
 
   GRM_IBD <- G2 / (4*nSit) ## divide by the number of sites times the number of haplotypes (= 2* number of ind)
   rownames(GRM_IBD) <- colnames(GRM_IBD) <- unique(id)
+
   return(GRM_IBD)
 }
 ```
@@ -348,28 +355,26 @@ getGRMibd <- function(IBDs){
 system.time(GRM_IBD <- getGRMibd(IBDs))
 
 GRM_IBD_gen0 <- GRM_IBD[inds_gen0, inds_gen0]
-
 GRM_IBD_not0 <- GRM_IBD[inds_not0, inds_not0]
-
 GRM_IBD_mid <- GRM_IBD[inds_mid, inds_mid]
 ```
 
 ### Plots
 
 ```{r, fig.width=10}
-image(as(GRM_IBD, "Matrix"), main="GRM_IBD (lineages)")
+image(as(GRM_IBD, "Matrix"), main=paste0("GRM_IBD (lineages)\n", simulDir))
 hist(diag(GRM_IBD))
 hist(GRM_IBD[upper.tri(GRM_IBD)])
 
-image(as(GRM_IBD_gen0, "Matrix"), main="GRM_IBD at generation 0 (lineages)")
+image(as(GRM_IBD_gen0, "Matrix"), main=paste0("GRM_IBD at generation 0 (lineages)\n", simulDir))
 summary(diag(GRM_IBD_gen0))
 summary(GRM_IBD_gen0[upper.tri(GRM_IBD_gen0)])
 
-image(as(GRM_IBD_not0, "Matrix"), main="GRM_IBD except generation 0 (lineages)")
+image(as(GRM_IBD_not0, "Matrix"), main=paste0("GRM_IBD except generation 0 (lineages)\n", simulDir))
 hist(diag(GRM_IBD_not0))
 hist(GRM_IBD_not0[upper.tri(GRM_IBD_not0)])
 
-image(as(GRM_IBD_mid, "Matrix"), main="GRM_IBD except first and last generation (lineages)")
+image(as(GRM_IBD_mid, "Matrix"), main=paste0("GRM_IBD except first and last generation (lineages)\n", simulDir))
 hist(diag(GRM_IBD_mid))
 hist(GRM_IBD_mid[upper.tri(GRM_IBD_mid)])
 ```
@@ -402,7 +407,7 @@ dim(A)
 Plot:
 
 ```{r, fig.width=10}
-image(as(A, "Matrix"), main="A (pedigree)")
+image(as(A, "Matrix"), main=paste0("A (pedigree)\n", simulDir))
 hist(diag(A))
 hist(A[upper.tri(A)])
 ```
@@ -475,7 +480,7 @@ tmp <- matrix(rep(1, nrow(genos))) %*% (2 * AFs_VR1)
 Z_VR1 <- genos - tmp
 GRM_VR1 <- estimVanRanden1(Z_VR1, AFs_VR1)
 
-image(as(GRM_VR1, "Matrix"), main="GRM (Van Raden 1, all generations)")
+image(as(GRM_VR1, "Matrix"), main=paste0("GRM (Van Raden 1, all generations)\n", simulDir))
 hist(diag(GRM_VR1), main="diag GRM (Van Raden 1, all generations)")
 hist(GRM_VR1[upper.tri(GRM_VR1)], main="offdiag GRM (Van Raden 1, all generations)")
 ```
@@ -490,7 +495,7 @@ tmp <- matrix(rep(1, nrow(genos[inds_gen0,]))) %*% (2 * AFs_gen0)
 Z_VR1_gen0 <- genos[inds_gen0,] - tmp
 GRM_VR1_gen0 <- estimVanRanden1(Z_VR1_gen0, AFs_gen0)
 
-image(as(GRM_VR1_gen0, "Matrix"), main="GRM (Van Raden 1, generation 0)")
+image(as(GRM_VR1_gen0, "Matrix"), main=paste0("GRM (Van Raden 1, generation 0)\n", simulDir))
 hist(diag(GRM_VR1_gen0), main="diag of GRM (Van Raden 1, generation 0)")
 hist(GRM_VR1_gen0[upper.tri(GRM_VR1_gen0)], main="offdiag of GRM (Van Raden 1, generation 0)")
 ```
@@ -505,7 +510,7 @@ tmp <- matrix(rep(1, nrow(genos[inds_not0,]))) %*% (2 * AFs_not0)
 Z_VR1_not0 <- genos[inds_not0,] - tmp
 GRM_VR1_not0 <- estimVanRanden1(Z_VR1_not0, AFs_not0)
 
-image(as(GRM_VR1_not0, "Matrix"), main="GRM (Van Raden 1, all generations except 0)")
+image(as(GRM_VR1_not0, "Matrix"), main=paste0("GRM (Van Raden 1, all generations except 0)\n", simulDir))
 hist(diag(GRM_VR1_not0), main="diag GRM (Van Raden 1, all generations except 0)")
 hist(GRM_VR1_not0[upper.tri(GRM_VR1_not0)], main="offdiag GRM (Van Raden 1, all generations except 0)")
 ```
@@ -543,7 +548,7 @@ Another approach is discussed below:
 ```{bash, eval=FALSE}
 ## go to the folder where the results of the simulations are saved
 conda activate qlife_simu
-simulDir="genpred_simul1"
+simulDir="genpred_simul2"
 cd simulations/${simulDir}
 mkdir -p ldak; cd ldak
 
@@ -604,15 +609,14 @@ GRM_ldak_mid <- GRM_ldak[inds_mid, inds_mid]
 #### Plot
 
 ```{r}
-image(as(GRM_ldak, "Matrix"), main="GRM (LDAK, all generations)")
+image(as(GRM_ldak, "Matrix"), main=paste0("GRM (LDAK, all generations)\n", simulDir))
 hist(diag(GRM_ldak), main="diag GRM (LDAK, all generations)")
 hist(GRM_ldak[upper.tri(GRM_ldak)], main="offdiag GRM (LDAK, all generations)")
 
-image(as(GRM_ldak_gen0, "Matrix"), main="GRM (LDAK, generation 0)")
+image(as(GRM_ldak_gen0, "Matrix"), main=paste0("GRM (LDAK, generation 0)\n", simulDir))
 hist(diag(GRM_ldak_gen0), main="diag of GRM (LDAK, generation 0)")
 hist(GRM_ldak_gen0[upper.tri(GRM_ldak_gen0)], main="offdiag of GRM (LDAK, generation 0)")
 ```
-
 
 ## Compare genetic relationship matrices
 
@@ -661,8 +665,8 @@ ggplot(genRels) +
   aes(x=A, y=IBD) +
   geom_abline(slope=1, intercept=0, linetype="dotted") +
   geom_hex(bins=50) + 
-  labs(title="Comparison of genetic relationship matrices",
-       subtitle="All generations",
+  labs(title="Comparison of genetic relationship matrices: all generations",
+       subtitle=simulDir,
        x="A", y="IBD") +
   theme_bw()
 
@@ -670,8 +674,8 @@ ggplot(droplevels(genRels[genRels$gen0,])) +
   aes(x=A, y=IBD) +
   geom_abline(slope=1, intercept=0, linetype="dotted") +
   geom_hex(bins=50) +
-  labs(title="Comparison of genetic relationship matrices",
-       subtitle="Generation 0",
+  labs(title="Comparison of genetic relationship matrices: generation 0",
+       subtitle=simulDir,
        x="A", y="IBD") +
   theme_bw()
 
@@ -692,8 +696,8 @@ ggplot(genRels) +
   aes(x=A, y=VR1) +
   geom_abline(slope=1, intercept=0, linetype="dotted") +
   geom_hex(bins=50) + 
-  labs(title="Comparison of genetic relationship matrices",
-       subtitle="All generations") +
+  labs(title="Comparison of genetic relationship matrices: all generations",
+       subtitle=simulDir) +
   theme_bw()
 ```
 
@@ -704,13 +708,10 @@ ggplot(genRels) +
   aes(x=VR1, y=LDAK) +
   geom_abline(slope=1, intercept=0, linetype="dotted") +
   geom_hex(bins=50) + 
-  labs(title="Comparison of genetic relationship matrices",
-       subtitle="All generations") +
+  labs(title="Comparison of genetic relationship matrices: all generations",
+       subtitle=simulDir) +
   theme_bw()
 ```
-
-
-
 
 <!-- ==================================================================== -->
 
@@ -746,7 +747,8 @@ vcLMM <- function(data, inds, K, Z, colY="pheno1", colZ="ind_id",
   if(pkg == "rrBLUP"){
     ## prepare the inputs
     if(model == "GBLUP"){
-      print("fit a GBLUP model with R/rrBLUP")
+      print(paste0("fit a vc-LMM (K=", deparse(substitute(K)),
+                   ") with R/rrBLUP"))
       subData[,colZ] <- factor(as.character(subData[,colZ]))
       Z <- model.matrix(as.formula(paste0("~ 0 + ", colZ)), data=subData)
       colnames(Z) <- gsub(paste0("^", colZ), "", colnames(Z))
@@ -826,6 +828,50 @@ vcLMM <- function(data, inds, K, Z, colY="pheno1", colZ="ind_id",
 }
 ```
 
+### With the true identities by descent
+
+The following vc-LMM is adjusted:
+
+```{=tex}
+\begin{align}
+y = \boldsymbol{\text{1}}_n \mu + \boldsymbol{u}_I + \boldsymbol{\epsilon}_I
+\end{align}
+```
+-   $\boldsymbol{u}_I \sim \mathcal{N}(\boldsymbol{0}, \sigma_{u,I}^2 GRM_{IBD})$
+
+    -   $GRM_{IBD}$: $n \times n$ matrix of additive genetic relationships from the true identities by descent
+
+    -   $\boldsymbol{u}_I$: $n$-vector of genetic values modeled as random
+
+    -   $\sigma_{u,I}^2$: genetic variance component
+
+-   $\boldsymbol{\epsilon}_I \sim \mathcal{N}(\boldsymbol{0}, \sigma_I^2 \text{Id})$.
+
+#### Trait 1
+
+##### All generations
+
+```{r, fig.width=10}
+fitI1 <- vcLMM(data=pedDat, inds=as.character(pedDat$ind_id),
+               K=GRM_IBD, colY="pheno1", colZ="ind_id",
+               method="REML", pkg="rrBLUP")
+attr(fitI1, "Vu")
+attr(fitI1, "Ve")
+attr(fitI1, "Vu") / (attr(fitI1, "Vu") + attr(fitI1, "Ve"))
+cor(fitI1$BLUP_u, fitI1$bv1)
+fitI1$generation <- factor(as.character(fitI1$generation),
+                           levels=as.character(sort(unique(fitI1$generation))),
+                           ordered=TRUE)
+ggplot(fitI1) +
+  aes(x=BLUP_u, y=bv1, color=generation) +
+  geom_abline(slope=1, intercept=0, linetype="dotted") +
+  geom_point() +
+  labs(title="Trait 1; GBLUP with GRM_IBD; all generations",
+       subtitle=simulDir,
+       color="Generation") +
+  theme_bw()
+```
+
 ### With the pedigree
 
 The following vc-LMM, sometimes called the **PBLUP** model, is adjusted:
@@ -862,9 +908,10 @@ fitA1$generation <- factor(as.character(fitA1$generation),
                            ordered=TRUE)
 ggplot(fitA1) +
   aes(x=BLUP_u, y=bv1, color=generation) +
+  geom_abline(slope=1, intercept=0, linetype="dotted") +
   geom_point() +
-  labs(title="Trait 1; kinship from pedigree",
-       subtitle="All generations",
+  labs(title="Trait 1; ABLUP with pedigree; all generations",
+       subtitle=simulDir,
        color="Generation") +
   theme_bw()
 ```
@@ -885,8 +932,8 @@ fitA1_not0$generation <- factor(as.character(fitA1_not0$generation),
 ggplot(fitA1_not0) +
   aes(x=BLUP_u, y=bv1, color=generation) +
   geom_point() +
-  labs(title="Trait 1; kinship from pedigree",
-       subtitle="All generations except 0",
+  labs(title="Trait 1; ABLUP with pedigree; all generations except 0",
+       subtitle=simulDir,
        color="Generation") +
   theme_bw()
 ```
@@ -981,8 +1028,8 @@ ggplot(fitG1) +
   aes(x=BLUP_u, y=bv1, color=generation) +
   geom_abline(slope=1, intercept=0, linetype="dotted") +
   geom_point() +
-  labs(title="Trait 1; kinship from Van Raden (2008)",
-       subtitle="All generations",
+  labs(title="Trait 1; GBLUP with GRM_VR1; all generations",
+       subtitle=simulDir,
        color="Generation") +
   theme_bw()
 ```
@@ -1010,8 +1057,8 @@ ggplot(fitS1) +
   aes(x=Z_BLUP_u, y=bv1, color=generation) +
   geom_abline(slope=1, intercept=0, linetype="dotted") +
   geom_point() +
-  labs(title="Trait 1; kinship from Van Raden (2008)",
-       subtitle="All generations",
+  labs(title="Trait 1; SNPBLUP with Z_VR1; all generations",
+       subtitle=simulDir,
        color="Generation") +
   theme_bw()
 ```
@@ -1038,8 +1085,7 @@ TODO
 
 ## Predict the breeding values of non-phenotyped individuals
 
-Let us consider that the available phenotypic data are those of generations 0 to 9, and that only the genotyping data are available for generation 10.
-A vc-LMM can be trained on the first dataset (generations 0 to 9), and used to predict the breeding values of individuals from generation 10.
+Let us consider that the available phenotypic data are those of generations 0 to 9, and that only the genotyping data are available for generation 10. A vc-LMM can be trained on the first dataset (generations 0 to 9), and used to predict the breeding values of individuals from generation 10.
 
 ### Using the estimated SNP effects
 
@@ -1061,6 +1107,16 @@ plot(pred_BV1_last, setNames(pedDat$bv1, pedDat$ind_id)[names(pred_BV1_last)],
 
 TODO
 
+```{r}
+## With GRM_IBD
+
+## With A
+
+## With GRM_VR1
+
+## With GRM_LDAK
+
+```
 
 
 <!-- ==================================================================== -->
@@ -1083,9 +1139,6 @@ if(FALSE){
                  data=subData, nIters=10, verbose=FALSE)
 }
 ```
-
-
-
 
 # Appendix
 
