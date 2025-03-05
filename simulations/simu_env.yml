@@ -18,5 +18,10 @@ dependencies:
   - r-gaston
   - r-ggbeeswarm
   - r-tidyverse
+  - r-quadprog
+  - r-kinship2
+  - r-sommer
+  - r-codetools
+  - r-hexbin
 
 
