@@ -2,13 +2,13 @@
 
 For the simulations, we use msprime (coalescent simulations) for the neutral burn-in phase and generate coalescence trees.                                     
 Mutations are then overlayed to these trees, to generate the genotypes of the founders (initial population).                                      
-We then use a forward-in-time simulator (simuPOP) to do multiple round of selection, using the previously generate founders as base population.                                    
+We then use a forward-in-time simulator (simuPOP) to do multiple rounds of selection, using the previously generated founders as base population.                                    
 
-Individual are selected based on their probability to have offsprings, i.e their fitness.                                                         
+Individual are selected based on their probability to have offsprings, i.e, their fitness.                                                         
 The fitness of an individual is calculated using its phenotype, via an exponential fitness function: $e^{-(P - optimum)^2 / \sigma^{2}_{w}}$.                                   
 This function means that the farther the phenotype of an individual is from the optimum phenotype, the lower the fitness. This decrease of the fitness also depends on the width $\sigma^{2}_{w}$ of the function: the smaller varW is, the stronger the selection will be.                   
 
-The phenotype $P$ is calculated via adding a genetic contribution G to an environmental contribution $E$: $P = G + E$.                             
+The phenotype $P$ is calculated by adding a genetic contribution G to an environmental contribution $E$: $P = G + E$.                             
 The genetic contribution (or breeding value) is the part of the phenotype that will be transmitted to the next generation while the environmental contribution is a noise drawn from a normal distribution ($E \sim N(0, \sigma^{2}_{E})$).                               
 The heritability $h^2$ will determine the part of the phenotype that is due to the genetic contribution ($h^2 = \sigma^{2}_{G} / \sigma^{2}_{P} = \sigma^{2}_{G} / (\sigma^{2}_{G} + \sigma^{2}_{E})$: if $h^2 = 1$, then the phenotype is equal to the breeding value; on the contrary, if $h^2 = 0$, then the phenotype is equal to the environmental noise).
 Finally, the genetic contribution is obtained by adding the genotypes $x$ at all SNPs, weighted by the SNP effects $\beta$ ($G = \sum_{i = SNP} x_i \beta_i$).          
@@ -16,17 +16,17 @@ Finally, the genetic contribution is obtained by adding the genotypes $x$ at all
 
 ### Installation of the necessary packages
 
-Creation of the conda environment, via a yaml configuration file.  
+Creation of the conda environment, via a yaml configuration file:
 ```
 conda env create -f simu_env.yml                           
 ```
 
-And activate the environment to run the simulations
+Activation of the environment to run the simulations:
 ```
 conda activate qlife_simu                                                                  
 ```
 
-If needed, the environment can be updated:
+Update of the environment, if needed:
 ```
 conda env update --file simu_env.yml --prune
 ```
@@ -38,7 +38,7 @@ Run the simulator, with the default values for the parameters:
 python src/main.py                                 
 ```
 
-A certain number of parameters can be given as argument in the command line, under the format -parameter value.          
+A certain number of parameters can be given as argument in the command line, under the format `-parameter value`.          
 
 The parameters that can be changed are the following (default value and expected type in parenthesis):                               
 - savedFolder (default; string): folder where the outputs of the simulator will be saved                          
