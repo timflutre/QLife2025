@@ -51,12 +51,12 @@ The parameters that can be changed are the following (default value and expected
 - nTrait (1; integer): number of traits                             
 - nChr (1; integer): number of chromosomes                               
 - Lchr (1000; integer): number of sites per chromosome
-- nQTLChr (1; integer): number of QTLs per chromosome
 - LG (100; float): genetic length of each chromosome, in cM (recombination rate rho = 0.01*LG / Lchr)
 - mu (1e-4; float): mutation rate (per site)
 - proportion0 (0.0; float): proportion of the SNPs (Lchr - nQTLChr) with an effect drawn from another distribution
-- varEffect (1.0; float): variance of the distribution of the QTL effects (those controlled by the parameter nQTLChr)
 - varEffect0 (0.0; float): variance of the distribution of the QTL effects (those controlled by the parameter proportion0)
+- nQTL (1; integer): number of QTLs in the whole genome
+- varEffect (1.0; float): variance of the distribution of the QTL effects (those controlled by the parameter nQTLChr)
 - corTrait (0.5; positive float): correlation between the effect of two trait    
 - signCor (pos; string): sign of the correlation between the two traits (either 'pos' or 'neg') 
 
