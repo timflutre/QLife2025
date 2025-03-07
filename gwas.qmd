@@ -201,15 +201,15 @@ ggplot(lm.res.2) +
 Most likely yes, some markers near the QTLs still show an association signal (a low p-value) even if they are not the causal variant. How many there are and how far from the QTL will depend on the recombination rate in the region (which we decreased by reducing the chromosome genetic length) and the effective population size (Ne). 
 :::
 
-Generally, your study system will come with its available genotyping tools. These will constrain the marker density of your GWAS. In addition to genotyping and sequencing techniques (RADseq, Low pass sequencing ...), statistical methods can be used to improve marker density: **genotype imputation methods**. We will not cover them in this practical, but know that if you have sufficiently large diversity panels for your species, these methods can greatly increase power of GWAS by predicting the genotype of individuals for large number of known markers.
+Generally, your study system will come with its available genotyping tools. These will constrain the marker density of your GWAS. In addition to genotyping and sequencing techniques (RADseq, Low pass sequencing ...), statistical methods can be used to improve marker density: **genotype imputation methods**. We will not cover them here, but know that if you have sufficiently large diversity panels for your species, these methods can greatly increase power of GWAS by predicting the genotype of individuals for large number of known markers.
 
 ## Multiple testing: Family Wise Error Rate
 
 By increasing the number of markers assessed for association, we increase the number of statistical tests. In order to call significant associations we need to account for this multiple testing.
 
-The simplest way to control for multiple testing is to control the Family Wise Error Rate (FWER) by the Bonferroni procedure. The FWER is the probability that one of the test deemed significant is a false positive. For a single test, this is simply the associated p-value ($p$). So if you want to control the FWER at level $\alpha$, you will call your single test significant if $p \leq \alpha$.
+The simplest way to control for multiple testing is to control the Family Wise Error Rate (FWER) by the Bonferroni procedure. The FWER is the probability that one or more of the test called significant is a false positive. For a single test, this is simply the associated p-value ($p$). So if you want to control the FWER at level $\alpha$, you will call your single test significant if $p \leq \alpha$.
 
-However, if you perform $n$ independant statistical test, you want to control the FWER with the same level $\alpha$, you need to adjust your threshold for each of the $n$ tests. One procedure to do this is the so-called Bonferroni procedure, which corresponds to setting the significance threshold at $\alpha/n$. So for example if you want to control FWER at $\alpha=0.05$ and perform 1 million tests for association, you should only reject tests that have a pvalue less than $0.05 \times 10^{-6} = 5.10^{-8}$
+However, if you perform $n$ independant statistical tests and you want to control the FWER with the same level $\alpha$, you need to adjust your threshold for each of the $n$ tests. One procedure to do this is the so-called *Bonferroni procedure*, which corresponds to setting the significance threshold at $\alpha/n$. So for example if you want to control FWER at $\alpha=0.05$ and perform 1 million tests for association, you should only reject tests that have a pvalue less than $0.05 \times 10^{-6} = 5.10^{-8}$
 
 ::: {.callout-note title="Explaining the Bonferroni procedure" collapse="true"}
 To understand why we are taking more risk of false positives when performing many statistical tests and not adjusting our rejection threshold, we need to understand what is expected of our p-values if all our tests were true negatives (no association). In such a situation, all our p-values would arise from the random correlation of a genotype to our phenotype. It can happen that a genotype aligns with the phenotype by chance. But under this global null hypothesis, the resulting p-values are *drawn from a uniform distribution*: the chance that a p-value is $< \alpha$ is $\alpha$ itself. So if we do 1,000,000 tests, we expect 5 % of them to have a p-value $<0.05$, that's 50,000 "significant" false positives !
@@ -234,9 +234,11 @@ One problem with the Bonferroni procedure is that it is **conservative**, in par
 ## assess significance via permutations
 
 # permutations:
-# permutate the phenotypes
+# permute the phenotypes
 # and test the association as before
-# for each SNP, look at the number of times the observed p-value is LESS than the minimal p-value obtained for a permutation (all test - i.e. SNP - considered)
+# for each SNP, look at the number of times the observed p-value
+# is LESS than the minimal p-value obtained for a permutation
+# (all test - i.e. SNP - considered)
 # do it multiple (nrep) times
 
 permutation_test <- function(ped, geno, nrep, pval_obs) {
@@ -265,7 +267,7 @@ ggplot(lm.res.2) +
 ```
 
 ::: callout-warning
-As you have seen, this procedure is quite time consuming (and we only did 100 replicates, which we should increase at least by 10). Also it only works because individuals are *exchangeable* as they are unrelated. In large sample sizes, this exchangeability hypothesis is not true anymore (kinship varies between pairs of individuals) and the permutation scheme cannot be used.
+As you have seen, this procedure is quite time consuming (and we only did 100 replicates, which we should increase at least by 10 fold). Also it only works because individuals are *exchangeable* as they are unrelated. In large sample sizes, this exchangeability hypothesis is not true anymore (kinship varies between pairs of individuals) and the permutation scheme cannot be used.
 :::
 
 ## Population structure
@@ -288,6 +290,10 @@ python src/main.py -savedFolder 'gwas_simu3' -nQTL 1 -Lchr 2000 -LG 100 -varEffe
 ```
 
 ### Analysis with a simple linear model
+
+-   Run the GWAS (using lm) on individuals as before
+-   Using the Bonferroni procedure, how many SNPs would be called significant ?
+-   Plot the distribution of p-values ? Compare it to the distribution of p-values in the GWAS in the random mating population. What do you see ?
 
 ```{r}
 # load the data
@@ -336,9 +342,7 @@ ggplot(lm.res.3) +
 hist(lm.res.3$pval, prob = TRUE, n = 100)
 ```
 
--   Run the GWAS (using lm) on individuals as before
--   Using the Bonferroni procedure, how many SNPs would be called significant ?
--   Plot the distribution of p-values ? Compare it to the distribution of p-values in the GWAS in the random mating population. What do you see ?
+
 
 ::: {.callout-note collapse="true" title="Population structure effects on GWAS"}
 While the QTL exhibits a very large signal of association, we can see a lot of significant SNPs on almost all chromosomes. The distribution of p-values is highly inflated toward low values. We are analysing the data as if the individuals were exchangeable while it is clearly not the case. This leads to spurious associations (false positives)
@@ -373,6 +377,10 @@ $$
 $$ where $\mathbf{u}$ is a matrix of size $N\times K$ where $u_{ij}$ is the coordinate of individual $i$ on the $j$th principal component.
 
 
+ - Run the GWAS (using lm + PC covariates) on individuals from the last generation of the dataset 
+ - Using the Bonferroni procedure, how many SNPs would be called significant ? 
+ - Plot the distribution of p-values ? Compare it to the distribution of p-values in the GWAS without PC correction. What happened ?
+
 ```{r}
 ## add these components in the lm
 # association testing
@@ -401,9 +409,6 @@ hist(lm.res.pca$pval, prob = TRUE, n = 100)
 ```
 
 
- - Run the GWAS (using lm + PC covariates) on individuals from the last generation of the dataset 
- - Using the Bonferroni procedure, how many SNPs would be called significant ? 
- - Plot the distribution of p-values ? Compare it to the distribution of p-values in the GWAS without PC correction. What happened ?
 
 :::{.callout-note collapse="true" title="GWAS adjusted with PCA"}
 After including the first 20 PCs in the regression model, the false positives on other chromosomes have (almost) all disappeared. The large signal at the QTL stays significant. The distribution of p-values is much less inflated at low values, the remaining significant SNPs are in LD with the QTL.
@@ -411,11 +416,11 @@ After including the first 20 PCs in the regression model, the false positives on
 
 # Multiple QTLs
 
-Up until now, we have considered a single QTL participating in the phenotype. We have tested markers one at a time to test for association. In a more general setting, in particular in the case of **polygenic** adaptation, we want to consider situations where multiple QTLs contribute to the trait. In the second part of the workshop we will be simulating more complex genetic architecture and use different approaches to infer them.
+Up until now, we have considered a single QTL participating in the phenotype. We have tested markers one at a time  for association. In a more general setting, in particular in the case of **polygenic** adaptation, we want to consider situations where multiple QTLs contribute to the trait. In the second part of the workshop we will be simulating more complex genetic architecture and use different approaches to infer them.
 
 ## Oligogenic model
 
-First, we will be considering a situation were there are multiple but still relatively few QTLs segregating in the population. This corresponds to an *oligogenic* determinism. The questions we want to answer are how many QTLs are there, what are their global effect on the trait of interest.
+First, we will be considering a situation were there are multiple but still relatively few QTLs segregating in the population. This corresponds to an *oligogenic* determinism. The additional questions we want to answer with our GWAS analysis are how many QTLs are there and what are their global effect on the trait of interest.
 
 ### Simulations
 
@@ -472,7 +477,6 @@ As the population is panmictic, we can expect individuals to be approximately un
 
 # association: linear regression, independently for each markers
 lm.res.4 <- apply(geno, 2, function(x) summary(lm(ped$pheno1 ~ x))$coeff[2, ])
-# reformat the result for easier plotting
 lm.res.4 <- as.data.frame(t(lm.res.4))
 colnames(lm.res.4) <- c("beta_hat", "se", "tstat", "pval")
 lm.res.4$beta <- snp$beta_trait_1
@@ -481,10 +485,19 @@ lm.res.4$chr_id <- snp$chr_id
 lm.res.4$qtl <- 0
 lm.res.4$qtl[lm.res.4$beta != 0] <- 1
 nsnp <- nrow(lm.res.4)
+```
 
-ggplot(lm.res.4) +
-  geom_point(aes(x = beta, y = beta_hat, col = as.factor(qtl))) +
-  scale_colour_manual(values = c("0" = "black", "1" = "red"))
+```{r}
+# reformat the result for easier plotting
+
+
+ggplot(lm.res.4, aes(x = beta, y = beta_hat, )) +
+  geom_violin(data = lm.res.4 |> filter(qtl == 0), alpha = 0.1, width = 0.2) +
+  geom_abline() +
+  geom_point(data = lm.res.4 |> filter(qtl == 1), aes(col = -log10(pval))) +
+  scale_colour_viridis_c() +
+  xlab("True Effect") +
+  ylab("Effect Estimate")
 
 ggplot(lm.res.4) +
   geom_point(aes(x = snp_id, y = -log10(pval), shape = as.factor(qtl), col = as.factor(chr_id)))
@@ -492,16 +505,20 @@ ggplot(lm.res.4) +
 hist(lm.res.4$pval, breaks = 100, prob = TRUE)
 
 ## qqplot
-qqnorm(lm.res.4$tstat) ## t-stat
+qqnorm(lm.res.4$tstat, pch = 19) ## t-stat
 qqline(lm.res.4$tstat, col = "red")
 ## qqplot for -log10(pval)
-qqplot(-log10(ppoints(nsnp)), -log10(lm.res.4$pval), xlab = "theoretical", ylab = "observed", main = "Q-Q Plot for -log10 Pval")
+qqplot(-log10(ppoints(nsnp)), -log10(lm.res.4$pval),
+  xlab = "theoretical", ylab = "observed",
+  main = "Q-Q Plot for -log10 Pval",
+  pch = 19
+)
 abline(a = 0, b = 1, col = "red")
 ```
 
 ### Multiple Testing: False Discovery Rate
 
-In the situation were we might expect many underlying causal variant, calling significance based on FWER can affect our power to make new discoveries. If we are not going to biologically validate every single GWAS hit, we might use a different criterion to call significance: the **False Discovery Rate (FDR)**. 
+In the situation where we might expect many underlying causal variant, calling significance based on FWER can affect our power to make new discoveries. If we are not going to biologically validate every single GWAS hit, we might use a different criterion to call significance: the **False Discovery Rate (FDR)**. 
 
 :::{.callout-note icon="False" title="FWER and FDR"}
 
@@ -570,10 +587,10 @@ In addition to estimating FDR, the ASH method provides new estimates of the mark
 ```{r}
 ggplot(lm.res.4) +
   geom_point(aes(x = beta_hat, beta_ash, col = as.factor(qtl))) +
-  scale_colour_manual(values = c("0" = "black", "1" = "red")) + 
+  scale_colour_manual(values = c("0" = "black", "1" = "red")) +
   geom_abline()
 ```
-ASH indeed shrinks single marker estimates close to zero except for a few loci, QTLs, for which it is more confident in the effect.
+ASH indeed shrinks single marker estimates close to zero except for a few loci, QTLs, for which it is more confident in the effect. In general the ASH approach provides a lot of additional information on "significance" of the different tests.  
 :::
 
 ## Polygenic model
@@ -627,6 +644,8 @@ snp <- snp[freq > 0 & freq < 1, ]
 
 ### Linear Regression
 
+We can perform a simple linear regression but this will be affected by population structure, so it is prone to false positives.
+
 ```{r}
 # association: linear regression, independently for each markers
 lm.res.5 <- apply(geno, 2, function(x) summary(lm(ped$pheno1 ~ x))$coeff[2, ])
@@ -641,30 +660,58 @@ lm.res.5$qtl[lm.res.5$beta != 0] <- 1
 nsnp <- nrow(lm.res.5)
 ```
 
-### Ridge Regression : Linear Mixed Effects (BLUP)
+```{r}
+hist(lm.res.5$pval, n = 100, freq = FALSE, main = "P-Value distribution")
+ggplot(lm.res.5, aes(x = beta, y = beta_hat)) +
+  geom_point(alpha = 0.1) +
+  geom_abline()
+```
 
-rrBLUP
+The distribution of p-values has large low values, possibly due to true effects 
+but also due to population structure. To capture both effects and appropriately
+take them into account in our analysis, we can use **Linear Mixed Effect Models (LMMs)**. 
+
+### Ridge Regression (SNPBLUP)
+
+The simplest LMM approach is to assume that all marker effects are drawn from 
+a Gaussian distribution with the same variance. It is the same model as the 
+GBLUP model used for genomic prediction. We can fit such a model with the `rrblup` 
+package.
 
 ```{r}
 rrblup.res <- mixed.solve(y = ped$pheno1, Z = as.matrix(geno)) ## by default K = I
 lm.res.5$beta_blup <- rrblup.res$u
 
-ggplot(lm.res.5, aes(x = beta, y = beta_hat)) +
+
+ggplot(lm.res.5, aes(x = beta_hat, y = beta_blup)) +
   geom_point(alpha = 0.1) +
   geom_abline()
 
 ggplot(lm.res.5, aes(x = beta, y = beta_blup)) +
   geom_point(alpha = 0.1) +
   geom_abline()
-
-ggplot(lm.res.5, aes(x = beta_hat, y = beta_blup)) +
-  geom_point(alpha = 0.1) +
-  geom_abline()
 ```
+We can see from the distribution of $\beta$ that there are two classes of loci, some
+with very small effects and some with larger effects. However because the RRBLUP
+model assumes a single class, it adjusts to the larger one, the small effects 
+and the "large" QTL effects are highly **shrinked**. While this model can work
+for prediction among relatives, it is not good at finding large QTLs and predicting
+distantly related individuals.
 
 ### Linear Mixed Effects Model + QTLs
 
-gaston
+Another approach to GWAS with LMM is to perform single locus tests *while accounting
+for polygenic effects*. The idea is to fit a mixed model where the SNP tested
+is assigned a **fixed** effect (rather than a random one). So we are testing
+for $\beta=0$ in the context of :
+
+$$
+\mathbf{Y} = \mu + \mathbf{G}\beta + \mathbf{u} + \mathbf{e}
+$$
+with $\mathbf{u}\sim \mathcal{N}(0,\mathbf{K}\sigma^2_U)$.
+
+There are different software that do this (GCTA, gemma, 
+fastLMM ...). Here we will use the `gaston` R package. 
 
 ```{r}
 ## generate the inputs to be used
@@ -684,6 +731,12 @@ X <- matrix(1, nrow(x))
 
 ## association test
 gaston.res <- association.test(x = x, Y = x@ped$pheno, X = X, method = "lmm", test = "wald", response = "quantitative", eigenK = eigK)
+```
+
+```{r}
+
+hist(lm.res.5$pval,n=100, main="Pvalue Distribution (LMM = red)")
+hist(gaston.res$p,add=T,col=2,n=100)
 
 ggplot(gaston.res) +
   geom_point(aes(x = id, y = -log10(p), col = as.factor(chr)))
@@ -691,12 +744,15 @@ ggplot(gaston.res) +
 lm.res.5$beta_gaston <- gaston.res$beta
 ggplot(lm.res.5) +
   geom_point(aes(x = beta_hat, y = beta_gaston)) +
+  xlab("Linear Model Estimate") + 
+  ylab("LMM Estimate (gaston)") + 
   geom_abline()
 ```
+The LMM approach gives a correct distribution of p-values while providing essentially the same result at each SNP as the linear model. 
 
 ### Bayesian Sparse Linear Mixed Effects
 
-gemma (bslmm)
+ANothe model
 
 ```{bash , eval=FALSE}
 ## reformat the input data
@@ -764,7 +820,7 @@ summary(gaston.ash)
 
 lm.res.5$beta_gaston_ash <- gaston.ash$result$PosteriorMean
 lm.res.5$qval_gaston_ash <- gaston.ash$result$qvalue
-th.ash = max(lm.res.5$pval[lm.res.5$qval_gaston_ash<0.05])
+th.ash <- max(lm.res.5$pval[lm.res.5$qval_gaston_ash < 0.05])
 
 ggplot(lm.res.5) +
   geom_point(aes(x = beta_gaston, beta_gaston_ash)) +
