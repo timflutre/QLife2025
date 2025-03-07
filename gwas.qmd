@@ -752,7 +752,7 @@ The LMM approach gives a correct distribution of p-values while providing essent
 
 ### Bayesian Sparse Linear Mixed Effects
 
-gemma (bslmm)
+ANothe model
 
 ```{bash , eval=FALSE}
 ## reformat the input data
