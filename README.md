@@ -16,7 +16,9 @@ See the file `genpred.qmd`:
 
 2. run the simulations in the terminal
 
-3. click on `Render`
+3. click on `-> Render`
+
+4. visualize the output in a web browser
 
 By default, the computations are cached.
 If you want to re-run all chunks, put `cache` at `false` in the YAML header.
