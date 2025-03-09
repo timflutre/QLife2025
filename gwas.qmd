@@ -80,6 +80,13 @@ The association results we will work with are:
 
 Although this appears simple enough, devil is in the details, and today we will be looking into how to deal with them in order to perform a robust yet powerful GWAS.
 
+:::{.callout-important}
+# Do not use simple linear regression for GWAS
+Although we will be using simple linear regression in some parts of this workshop, it is only for 
+explaining the concepts underlying GWAS and show why it is flawed in many ways. On real datasets
+simple linear regression like this is never a good model.
+:::
+
 # Single Locus Test
 
 ## Linkage Disequilibrium and marker density
@@ -424,7 +431,7 @@ First, we will be considering a situation were there are multiple but still rela
 
 ### Simulations
 
-First, we will simulate a larger (n=1000) sample from a panmictic population of effective size $Ne = 10 000$. We will simulate around 10,000 polymorphisms out of which 100 are going to be QTLs. The overall heritability of the trait is set to 50%.
+First, we will simulate a larger (n=1000) sample from a panmictic population of effective size $Ne = 10, 000$. We will simulate around 0,000 polymorphisms out of which 100 are going to be QTLs. The overall heritability of the trait is still set to 50% so individual QTLs have small effects.
 
 ```{bash, eval = FALSE}
 ## Simulations for the multi-QTLs
@@ -488,8 +495,8 @@ nsnp <- nrow(lm.res.4)
 ```
 
 ```{r}
-# reformat the result for easier plotting
-
+# For truly neutral markers (beta =0) we use a representation of the density of the estimates:
+# a violin plot
 
 ggplot(lm.res.4, aes(x = beta, y = beta_hat, )) +
   geom_violin(data = lm.res.4 |> filter(qtl == 0), alpha = 0.1, width = 0.2) +
@@ -515,6 +522,13 @@ qqplot(-log10(ppoints(nsnp)), -log10(lm.res.4$pval),
 )
 abline(a = 0, b = 1, col = "red")
 ```
+
+Most of the QTLs are non significant. This is because (i) we are sampling their effects from a Gaussian
+distriubtion so some of the true effects can be really close to 0 and (ii) as we set the heritability to be constant, any single QTL cannot have a too high contribution to the trait.
+
+This is another one of the (numerous) limitations of linear regression for GWAS : it does not account for the fact that other QTLs can be affecting the trait when testing a polymorphism for association.
+
+
 
 ### Multiple Testing: False Discovery Rate
 
@@ -644,7 +658,7 @@ snp <- snp[freq > 0 & freq < 1, ]
 
 ### Linear Regression
 
-We can perform a simple linear regression but this will be affected by population structure, so it is prone to false positives.
+If we use a simple linear regression inference will be affected by population structure as we are combining multiple generations together, so it is prone to false positives.
 
 ```{r}
 # association: linear regression, independently for each markers
@@ -662,9 +676,6 @@ nsnp <- nrow(lm.res.5)
 
 ```{r}
 hist(lm.res.5$pval, n = 100, freq = FALSE, main = "P-Value distribution")
-ggplot(lm.res.5, aes(x = beta, y = beta_hat)) +
-  geom_point(alpha = 0.1) +
-  geom_abline()
 ```
 
 The distribution of p-values has large low values, possibly due to true effects 
@@ -681,7 +692,6 @@ package.
 ```{r}
 rrblup.res <- mixed.solve(y = ped$pheno1, Z = as.matrix(geno)) ## by default K = I
 lm.res.5$beta_blup <- rrblup.res$u
-
 
 ggplot(lm.res.5, aes(x = beta_hat, y = beta_blup)) +
   geom_point(alpha = 0.1) +
@@ -702,8 +712,9 @@ distantly related individuals.
 
 Another approach to GWAS with LMM is to perform single locus tests *while accounting
 for polygenic effects*. The idea is to fit a mixed model where the SNP tested
-is assigned a **fixed** effect (rather than a random one). So we are testing
-for $\beta=0$ in the context of :
+is assigned a **fixed** effect (rather than a random one). This will shrink all SNP effects
+as the SNPBLUP but the tested locus, so it is more flexible than SNPBLUP. 
+So we are testing for $\beta=0$ in the context of :
 
 $$
 \mathbf{Y} = \mu + \mathbf{G}\beta + \mathbf{u} + \mathbf{e}
@@ -748,12 +759,24 @@ ggplot(lm.res.5) +
   ylab("LMM Estimate (gaston)") + 
   geom_abline()
 ```
-The LMM approach gives a correct distribution of p-values while providing essentially the same result at each SNP as the linear model. 
+The LMM approach gives a correct distribution of p-values. **In this case**, as the population is panmictic and sample sizes balanced between generations, the relatedness is relatively "homogeneous"
+and the *point estimates* are not changed a lot compared to the simple linear regression (only the
+standard error is affected). This is generally **not** true.
+
+:::{.callout-note title="Leave one Chromosome Out"}
+In the LMM approach, all SNPs but the tested SNP are included in the model (with random effects). 
+Because some of this other SNPs can be correlated (in Linkage Disequilibrium due to physical proximity)
+with the tested SNP ,  this can affect the power to detect associations. A common approach to improve power is to remove SNPs from the same chromosome when testing for association. This is called the "Leave One Chromosome Out" (or LOCO) approach. Look at the software documentation for instructions :) 
+:::
 
 ### Bayesian Sparse Linear Mixed Effects
 
-ANothe model
+While we made progress by separating the tested QTL from the other SNPs and regain power, we are not
+using models that allow for multiple large(r) QTLs to segregate at the same time. Such genetic 
+architecture can be modelled by using multiQTL models. A first approach to tackle this was to use stepwise linear regression ([Segura et al. (2012)](https://doi.org/10.1038/ng.2314)). A more general model is the Bayesian Sparse Linear Mixed Effect model that we used for simulations and that can be estimated using `gemma`. 
 
+First we create files required by gemma and run it on our dataset. Because gemma uses an MCMC algorithm
+it can be quite slow to run. If too long for this workshop you can adjust the number of iterations, at the expense of much poorer estimates with the `-s` parameter.
 ```{bash , eval=FALSE}
 ## reformat the input data
 ## to get the needed format
@@ -792,9 +815,42 @@ gemma -bfile simu2 -gk 1
 gemma -bfile simu2 -lmm 2 -k output/result.cXX.txt
 
 ## run gemma (installed using conda)
-gemma -bfile simu2 -bslmm 1
+gemma -bfile simu2 -bslmm 1 
 
 ```
+
+#### Hyper-parameters
+
+Let's first look at the estimation of the hyper parameters of the model (*i.e.* the variance component)
+
+```{r}
+gemma.hyp = read.table("simulations/gwas_simu5/gemma/output/result.hyp.txt", header = TRUE)
+
+## The heritability estimate can be found under pve
+hist(gemma.hyp$pve,n=100, main="Posterior distribution of PVE (Heritability)",xlim=c(0,1))
+abline(v=0.5,col=2)
+```
+The PVE parameter estimates the Proporition of Variance Explained by genetic effects (QTLs + polygen). 
+Here we simulated 0.5. We are plotting the *posterior distribution* of this parameter, which give us and idea of our uncertainty in its value.
+
+Because the BSLMM separates genetic effects into a polygenic component (all markers have and effect as in GBLUP) and an oligogenic component (some SNPs are large(r) QTLs), the PGE parameter estimates the Propotion of Genetic Effects that are due to large QTLs.
+
+```{r}
+hist(gemma.hyp$pge,n=100,xlim=c(0,1),main="Proporition of Genetic Effects due to large QTLs")
+```
+This is sometimes hard to estimate as separating "large" and "small" genetic effects can be difficult. Again this should be reflected in the posterior distribution of this parameter.
+
+Finally `gemma` tries to estimate the number of large effect QTLs (the true value is 100 in our simulations)
+
+```{r}
+nmax = max(gemma.hyp$n_gamma)
+hist(gemma.hyp$n_gamma, breaks=seq(-0.5,nmax+1,1))
+abline(v=100, col=2 )
+```
+#### Marker effects
+
+Averaging over the uncertainty of these parameters, `gemma` will provide individual estimates of marker
+effects. `alpha` is the polygenic effect, `beta` is the large QTL effect and `gamma` is the probability that a SNP is a large QTL.
 
 ```{r}
 ## visualization
@@ -805,12 +861,24 @@ colnames(gemma.res) <- c("chr", "rs", "ps", "n_miss", "alpha_gemma", "beta_gemma
 lm.res.5$rs <- as.numeric(row.names(lm.res.5))
 data <- merge(lm.res.5, gemma.res)
 
-ggplot(data, aes(x = beta, y = alpha_gemma + beta_gemma)) +
+ggplot(data, aes(x = beta, y = alpha_gemma + beta_gemma, col=gamma_gemma)) +
   geom_point() +
   geom_abline()
 ```
 
+### Extensions
+6
+Since this original approach, more complex models, allowing for a larger number of QTL classes have been
+developped. For example `BayesR` ([Moser et al. (2015)]()) is a four class model. One important extension is to have classes that are defined based on *function annotations*, to account for example for the fact that SNPs in exons are more likely to have large effects than intergenic ones. The [BayesRCO](https://github.com/FAANG/BayesRCO) software ([Mollandin et al. (2022)](https://doi.org/10.1186/s12859-022-04914-5)) implements different flavours of these models.
+
 ### Estimate distribution of effects from summary statistics
+
+As sample sizes grow larger in GWAS, fitting complex models on the complete data can become unpractical.
+Also raw data sharing can be an issue in some contexts. Finally, when combining results from different
+studies, the same model cannot necessarily be applied (*e.g.* if covariates are different from one
+study to the next). For all these reasons, more and more multiQTL approaches relie on **Meta-analysis** methods that try to estimate the genetic architecture of the trait based on the **distribution of effect
+estimates** and their standard errors aka *summary statistics*. 
+The `ash` method we have introduced earlier is an example of such an approach.
 
 An alternative to using BSLMM is to fit the QTL distribution on the summary statistics with ASH:
 
