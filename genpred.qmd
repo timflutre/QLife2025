@@ -203,7 +203,9 @@ Keep the true genetic variances:
                "trait2"=list(varBV_all=var(pedDat[, "bv2"]),
                              varBV_gen0=var(pedDat[inds_gen0, "bv2"]),
                              varBV_not0=var(pedDat[inds_not0, "bv2"])),
-               "trait1-trait2"=list(corBV_gen0=cor(pedDat[inds_gen0, "bv1"],
+               "trait1-trait2"=list(corBV_all=cor(pedDat[, "bv1"],
+                                                  pedDat[, "bv2"]),
+                                    corBV_gen0=cor(pedDat[inds_gen0, "bv1"],
                                                    pedDat[inds_gen0, "bv2"]))))
 ```
 
@@ -317,8 +319,7 @@ Following [Legarra (2016)](http://dx.doi.org/10.1016/j.tpb.2015.08.005), let $\b
 
 -   In matrix form: $S_u^2 = \frac{1}{n} \boldsymbol{u}^T \boldsymbol{u} - \frac{1}{n^2} \boldsymbol{1}^T \boldsymbol{u}^T \boldsymbol{u} \boldsymbol{1}$.
 
-Because the genetic values are unknown, their genetic variance is unknown, too. So let us look at its expectation: $E[S_u^2] = \frac{1}{n} \sigma_u^2 tr(K) - \frac{1}{n^2} \sigma_u^2 \boldsymbol{1}^T K \boldsymbol{1} = D_K \; \sigma_u^2$ where $D_K := (\bar{diag(K)} - \bar{K})$.
-For the variance component $\sigma_u^2$ of a vc-LMM to directly correspond to the genetic variance in the reference population, $S_u^2$, the relationship matrix $K$ should be made so that $D_K = 1$.
+Because the genetic values are unknown, their genetic variance is unknown, too. So let us look at its expectation: $E[S_u^2] = \frac{1}{n} \sigma_u^2 tr(K) - \frac{1}{n^2} \sigma_u^2 \boldsymbol{1}^T K \boldsymbol{1} = D_K \; \sigma_u^2$ where $D_K := (\bar{diag(K)} - \bar{K})$. For the variance component $\sigma_u^2$ of a vc-LMM to directly correspond to the genetic variance in the reference population, $S_u^2$, the relationship matrix $K$ should be made so that $D_K = 1$.
 
 At Hardy--Weinberg equilibrium, it can be shown that $D_K=1$ for genomic relationship matrices obtained with Van Raden's estimators (see below). These estimators assume that the reference population is a population at HWE with allele frequencies equal to the allele frequencies observed in the sample, and that the locus are at linkage equilibrium. If the sample is indeed at HWE, the diagonal of Van Raden's GRM should be centered on 1 and the off-diagonal on 0.
 
@@ -467,11 +468,9 @@ See also [Toro et al (2011)](http://www.gsejournal.org/content/43/1/27).
 
 The estimator of molecular covariance is computed for each locus, summed over all locus, and then standardized by the total molecular variance: \begin{align}
 \hat{GRM}_{ii'}^{(VR1)} = \frac{1}{L} \frac{\sum_{l=1}^L (M_{il} - 2 \hat{f}_l)(M_{i'l} - 2 \hat{f}_l)}{2 \sum_{l=1}^L \hat{f}_l (1 - \hat{f}_l)}
-\end{align}
-where $M$ is the $n \times L$ matrix of SNP genotypes encoded in allele doses (number of copies of an arbitrarily-chosen allele at each SNP) so that $M_{il} \in [0,2]$.
+\end{align} where $M$ is the $n \times L$ matrix of SNP genotypes encoded in allele doses (number of copies of an arbitrarily-chosen allele at each SNP) so that $M_{il} \in [0,2]$.
 
-Following [Schreck et al (2019)](https://academic.oup.com/genetics/article/213/2/379/5930631), in matrix form: $GRM_{VR1} := P M M^T P / c_{VR1}$ where $P := \text{Id}_n - \boldsymbol{1}_n \boldsymbol{1}_n^T / n$ is the $n \times n$ matrix used for column-wise mean-centering and $c_{VR1} := 2 \sum_l \hat{f}_l (1 - \hat{f}_l)$.
-Not only $P$ happens to be symmetric ($P^T = P$), but it is also idempotent ($P^2 = P$).
+Following [Schreck et al (2019)](https://academic.oup.com/genetics/article/213/2/379/5930631), in matrix form: $GRM_{VR1} := P M M^T P / c_{VR1}$ where $P := \text{Id}_n - \boldsymbol{1}_n \boldsymbol{1}_n^T / n$ is the $n \times n$ matrix used for column-wise mean-centering and $c_{VR1} := 2 \sum_l \hat{f}_l (1 - \hat{f}_l)$. Not only $P$ happens to be symmetric ($P^T = P$), but it is also idempotent ($P^2 = P$).
 
 See the extension to the dominant genetic relationships in [Vitezica et al (2013)](http://dx.doi.org/10.1534/genetics.113.155176).
 
@@ -565,8 +564,7 @@ Although this estimator and similar ones are recommended by several authors, suc
 
 Genomic relationship matrices for genetic values (additive, dominant, epistatic) can be defined in such a way as the genetic variance is partitioned into independent variance components with no covariance between them. As a result, the estimation of one type of genetic (e.g., additive) effects will not be affected by the presence or absence of another type of genetic effects in the model (e.g., epistasis).
 
-See the NOIA estimator described in [Vitezica et al (2017)](http://www.genetics.org/content/206/3/1297).
-Still, as the authors wrote, "although the NOIA model removes the assumption of HWE, another factor that generates nonindependence between loci and lack of orthogonality is linkage disequilibrium."
+See the NOIA estimator described in [Vitezica et al (2017)](http://www.genetics.org/content/206/3/1297). Still, as the authors wrote, "although the NOIA model removes the assumption of HWE, another factor that generates nonindependence between loci and lack of orthogonality is linkage disequilibrium."
 
 ### Handling LD with LDAK
 
@@ -870,12 +868,11 @@ The **SNPBLUP** model is the following vc-LMM (it is also known as *ridge regres
 y = \boldsymbol{\text{1}}_n \, \mu_S + Z \, \boldsymbol{\beta} + \boldsymbol{\epsilon}_S
 \end{align}
 ```
-
 -   $Z$: $n \times L$ matrix of SNP genotypes, *considered fixed* (see below how SNP genotypes should be encoded for SNPBLUP to be equivalent to GBLUP)
 
 -   $\boldsymbol{\beta} \sim \mathcal{N}(\boldsymbol{0}, \sigma_{\beta}^2 \, \text{Id})$
 
-    - $\boldsymbol{\beta}$: $L$-vector of allelic effects, *modeled as random*
+    -   $\boldsymbol{\beta}$: $L$-vector of allelic effects, *modeled as random*
 
     -   $\sigma_\beta^2$: genetic variance component
 
@@ -897,29 +894,18 @@ See also [Vitezica et al (2013)](http://dx.doi.org/10.1534/genetics.113.155176).
 
 Theoretically, the **additive genetic variance**, $\sigma_a^2$, is defined as the variance of the additive genetic value based on the QTLs, the QTL effects being considered fixed and the QTL genotypes being considered random. As reminded above, the formal definition takes into account the LD between pairs of QTL genotypes.
 
-Following [Schreck et al (2019)](https://academic.oup.com/genetics/article/213/2/379/5930631), similarly, the theoretical **additive genomic variance**, $\sigma_{a,M}^2$, can be (informally) defined as the variance of the genomic value that can be explained by a linear regression on a set of markers, $M$.
-One could try to formally define this variance based on the informal definition above. However, as pointed out by Schreck et al, the informal definition does not imply a unique formal definition because of the different modeling possibilities in the vc-LMM: SNP genotypes as random, SNP effects as random, or both as random.
+Following [Schreck et al (2019)](https://academic.oup.com/genetics/article/213/2/379/5930631), similarly, the theoretical **additive genomic variance**, $\sigma_{a,M}^2$, can be (informally) defined as the variance of the genomic value that can be explained by a linear regression on a set of markers, $M$. One could try to formally define this variance based on the informal definition above. However, as pointed out by Schreck et al, the informal definition does not imply a unique formal definition because of the different modeling possibilities in the vc-LMM: SNP genotypes as random, SNP effects as random, or both as random.
 
-As described above, SNPBLUP models the SNP genotypes as fixed (FM) and the SNP effects as random (RE), so that $Cov(\boldsymbol{u}_S) = \sigma_{\beta}^2 P M M^T P$.
-However, this is a variance-covariance matrix whereas the additive genetic variance is a scalar and we would like the additive genomic variance to be so, too.
-One way to get a scalar variance from a random vector consists in interpreting the difference between this vector and its expectation as the Euclidean distance, which happens to be equal to the trace of the variance-covariance matrix of the random vector in question.
-In the case of the SNPBLUP model (FM-RE), Schreck et al took the average of the trace to be the theoretical additive genomic variance: $\sigma_{a,FM-RE}^2 := \frac{1}{n} tr(Cov(\boldsymbol{u}_S|M)) = \frac{1}{n} \sigma_\beta^2 \, tr(P M M^T P)$. The trace of a matrix being a scalar: \begin{align*}
+As described above, SNPBLUP models the SNP genotypes as fixed (FM) and the SNP effects as random (RE), so that $Cov(\boldsymbol{u}_S) = \sigma_{\beta}^2 P M M^T P$. However, this is a variance-covariance matrix whereas the additive genetic variance is a scalar and we would like the additive genomic variance to be so, too. One way to get a scalar variance from a random vector consists in interpreting the difference between this vector and its expectation as the Euclidean distance, which happens to be equal to the trace of the variance-covariance matrix of the random vector in question. In the case of the SNPBLUP model (FM-RE), Schreck et al took the average of the trace to be the theoretical additive genomic variance: $\sigma_{a,FM-RE}^2 := \frac{1}{n} tr(Cov(\boldsymbol{u}_S|M)) = \frac{1}{n} \sigma_\beta^2 \, tr(P M M^T P)$. The trace of a matrix being a scalar: \begin{align*}
 \sigma_{a,FM-RE}^2 = \frac{n-1}{n} \sigma_\beta^2 \, tr(\hat{\Sigma}_M)
-\end{align*}
-where $\hat{\Sigma}_M := \frac{1}{n-1} M^T P M$ is the sample variance-covariance matrix of the SNP genotypes.
-This shows that, structurally, **the LD between SNPs is ignored in the SNPBLUP model** (FM-RE) as only the trace of $\hat{\Sigma}_M$ appears in the formula. This hence is also the case of the equivalent GBLUP model with Van Raden's estimators: $\sigma_{a,FM-RE}^2 = \frac{1}{n} \sigma_{u,VR1}^2 tr(GRM_{VR1})$.
+\end{align*} where $\hat{\Sigma}_M := \frac{1}{n-1} M^T P M$ is the sample variance-covariance matrix of the SNP genotypes. This shows that, structurally, **the LD between SNPs is ignored in the SNPBLUP model** (FM-RE) as only the trace of $\hat{\Sigma}_M$ appears in the formula. This hence is also the case of the equivalent GBLUP model with Van Raden's estimators: $\sigma_{a,FM-RE}^2 = \frac{1}{n} \sigma_{u,VR1}^2 tr(GRM_{VR1})$.
 
 When SNP genotypes are modeled as random (RM) and SNP effects as fixed (FE), however, Schreck et al (2019) showed that the theoretical additive genomic variance is the genomic equivalent of the classical additive genetic variance, and that it takes LD into account: $\sigma_{a,M-FE}^2 := var(M \boldsymbol{\beta} | \boldsymbol{\beta})$ so that: \begin{align*} \sigma_{a,RM-FE}^2 = \boldsymbol{\beta}^T \, \Sigma_M \, \boldsymbol{\beta}
-\end{align*}
-where $\Sigma_M$ is the variance-covariance matrix of the SNP genotypes.
+\end{align*} where $\Sigma_M$ is the variance-covariance matrix of the SNP genotypes.
 
 In practice, $\Sigma_M$ is replaced by its estimate $\hat{\Sigma}_M$, and the theoretical additive genomic variance under the RM-FE model, $\sigma_{RM-FE}^2$, ends up being equal to the (unbiased) *sample* variance of the genomic values, $s_{a,M}^2$. Indeed: $s_{a,M}^2 := \frac{1}{n-1} \sum_i (u_{S,i} - \bar{u}_S)$. Given that $\bar{u}_S = 0$ and that $P$ is symmetric and idempotent: $s_{a,M}^2 = \frac{1}{n-1} \boldsymbol{u}_S^T \, \boldsymbol{u}_S = \frac{1}{n-1} \boldsymbol{\beta}^T \, M^T \, P \, M \, \boldsymbol{\beta} = \boldsymbol{\beta}^T \, \hat{\Sigma}_M \, \boldsymbol{\beta}$.
 
-In this RM-FE model, as $\boldsymbol{\beta}$ is random, so is $s_{a,M}^2$.
-Schreck et al hence proposed a best predictor for it, as the expectation of $s_{a,M}^2$ conditional on the phenotypic data.
-They further showed that it can be partitioned into the unconditional expectation of the additive genomic variance (ignoring LD) and the LD contribution conditional on the phenotypic data, noted $L(\boldsymbol{y})$: $BP(s_{a,M}^2) = \sigma_\beta^2 \, tr(\hat{\Sigma}_M) + L(\boldsymbol{y})$.
-In practice, the empirical best predictor is computed using the estimate of $\sigma_\beta^2$ and the eBLUP of $\boldsymbol{\beta}$ obtained by fitting the SNPBLUP model (or its equivalent GBLUP model) with ReML.
-Any difference between the unconditional and conditional expectations is due to the LD contribution, whose sign and magnitude depends on the dataset.
+In this RM-FE model, as $\boldsymbol{\beta}$ is random, so is $s_{a,M}^2$. Schreck et al hence proposed a best predictor for it, as the expectation of $s_{a,M}^2$ conditional on the phenotypic data. They further showed that it can be partitioned into the unconditional expectation of the additive genomic variance (ignoring LD) and the LD contribution conditional on the phenotypic data, noted $L(\boldsymbol{y})$: $BP(s_{a,M}^2) = \sigma_\beta^2 \, tr(\hat{\Sigma}_M) + L(\boldsymbol{y})$. In practice, the empirical best predictor is computed using the estimate of $\sigma_\beta^2$ and the eBLUP of $\boldsymbol{\beta}$ obtained by fitting the SNPBLUP model (or its equivalent GBLUP model) with ReML. Any difference between the unconditional and conditional expectations is due to the LD contribution, whose sign and magnitude depends on the dataset.
 
 #### LDAK approach
 
@@ -959,7 +945,7 @@ vcLMM <- function(data, inds, K, Z, colY="pheno1", colZ="ind_id", pkg="rrBLUP"){
     ## prepare the inputs
     if(model == "GBLUP"){
       print(paste0("fit a vc-LMM (K=", deparse(substitute(K)),
-                   ") with R/rrBLUP"))
+                   ") with R/rrBLUP (n=", nrow(subData), ")"))
       subData[,colZ] <- factor(as.character(subData[,colZ]))
       Z <- model.matrix(as.formula(paste0("~ 0 + ", colZ)), data=subData)
       colnames(Z) <- gsub(paste0("^", colZ), "", colnames(Z))
@@ -970,7 +956,7 @@ vcLMM <- function(data, inds, K, Z, colY="pheno1", colZ="ind_id", pkg="rrBLUP"){
           fit <- mixed.solve(y=y, X=X, Z=Z, K=K, method="REML"))
       subData$BLUP_u <- setNames(c(fit$u), colnames(Z))[subData[,colZ]]
     } else if(model == "SNPBLUP"){
-      print("fit a SNPBLUP model with R/rrBLUP")
+      print(paste0("fit a SNPBLUP model with R/rrBLUP (n=", nrow(subData), ")"))
       Z <- Z[as.character(subData[,colZ]),]
       y <- matrix(subData[, colY], ncol=1)
       X <- matrix(1, nrow=nrow(subData))
@@ -985,7 +971,9 @@ vcLMM <- function(data, inds, K, Z, colY="pheno1", colZ="ind_id", pkg="rrBLUP"){
     attr(subData, "BLUE_beta") <- c(fit$beta)
 
   } else if(pkg == "sommer"){
-    print("fit a GBLUP model with R/sommer + Schreck's best predictor")
+    print(paste0("fit a GBLUP model with R/sommer",
+                 " + Schreck's best predictor",
+                 " (n=", nrow(subData), ")"))
     y <- as.vector(subData[, colY])
     names(y) <- as.character(subData[, colZ])
     n <- length(y)
@@ -1033,7 +1021,7 @@ vcLMM <- function(data, inds, K, Z, colY="pheno1", colZ="ind_id", pkg="rrBLUP"){
 }
 ```
 
-### With the true identities by descent
+### Fit with the true identities by descent
 
 The following vc-LMM is adjusted:
 
@@ -1057,7 +1045,7 @@ y = \boldsymbol{\text{1}}_n \mu + \boldsymbol{u}_I + \boldsymbol{\epsilon}_I
 ##### All generations
 
 ```{r, fig.width=10}
-fitI1 <- vcLMM(data=pedDat, inds=as.character(pedDat$ind_id),
+fitI1 <- vcLMM(data=pedDat, inds=pedDat$ind_id,
                K=GRM_IBD, colY="pheno1", colZ="ind_id", pkg="rrBLUP")
 
 c("Vu_hat"=attr(fitI1, "Vu"),
@@ -1087,7 +1075,7 @@ ggplot(fitI1) +
 
 Left as an exercise.
 
-### With the pedigree
+### Fit with the pedigree
 
 The following vc-LMM, sometimes called the **PBLUP** model, is adjusted:
 
@@ -1111,7 +1099,7 @@ y = \boldsymbol{\text{1}}_n \mu + \boldsymbol{u}_P + \boldsymbol{\epsilon}_P
 ##### All generations
 
 ```{r, fig.width=10}
-fitA1 <- vcLMM(data=pedDat, inds=as.character(pedDat$ind_id),
+fitA1 <- vcLMM(data=pedDat, inds=pedDat$ind_id,
                K=A, colY="pheno1", colZ="ind_id", pkg="rrBLUP")
 
 c("Vu_hat"=attr(fitA1, "Vu"),
@@ -1141,14 +1129,14 @@ ggplot(fitA1) +
 
 Left as an exercise.
 
-### With markers, assuming LE
+### Fit with markers, assuming LE
 
 #### Trait 1 with GBLUP
 
 ##### All generations
 
 ```{r, fig.width=10}
-fitG1 <- vcLMM(data=pedDat, inds=as.character(pedDat$ind_id),
+fitG1 <- vcLMM(data=pedDat, inds=pedDat$ind_id,
                colY="pheno1", colZ="ind_id",
                K=GRM_VR1, #as.matrix(Matrix::nearPD(GRM_VR1)$mat),
                pkg="rrBLUP")
@@ -1186,7 +1174,7 @@ D_A * attr(fitA1, "Vu")
 ##### All generations
 
 ```{r, fig.width=10}
-fitS1 <- vcLMM(data=pedDat, inds=as.character(pedDat$ind_id),
+fitS1 <- vcLMM(data=pedDat, inds=pedDat$ind_id,
                colY="pheno1", colZ="ind_id",
                Z=Z_VR1, pkg="rrBLUP")
 
@@ -1229,14 +1217,14 @@ Left as an exercise.
 
 Left as an exercise.
 
-### With markers, handling LD
+### Fit with markers, handling LD
 
 #### Trait 1 with GBLUP and GRM_LDAK
 
 ##### All generations
 
 ```{r}
-fitL1 <- vcLMM(data=pedDat, inds=as.character(pedDat$ind_id),
+fitL1 <- vcLMM(data=pedDat, inds=pedDat$ind_id,
                colY="pheno1", colZ="ind_id",
                K=GRM_ldak, #as.matrix(Matrix::nearPD(GRM_LDAK)$mat),
                pkg="rrBLUP")
@@ -1278,6 +1266,7 @@ Let us consider that the available phenotypic data are those of generations 0 to
 ```{r}
 length(inds_trn <- inds_notlast)
 length(inds_tst <- inds_last)
+length(y_trn <- setNames(pedDat$pheno1, pedDat$ind_id)[inds_trn])
 ```
 
 ### Using the estimated SNP effects
@@ -1289,15 +1278,16 @@ dim(genos_trn <- genos[inds_trn,])
 AFs_trn <- colMeans(genos_trn) / 2
 tmp <- matrix(rep(1, nrow(genos_trn))) %*% (2 * AFs_trn)
 Z_trn <- genos_trn - tmp
-fit_trn <- vcLMM(data=pedDat, inds=as.character(inds_trn),
+fit_trn <- vcLMM(data=pedDat, inds=inds_trn,
                  colY="pheno1", colZ="ind_id",
                  Z=Z_trn, pkg="rrBLUP")
 
 dim(genos_tst <- genos[as.character(inds_tst),])
 pred_BV1_SNPs <- (genos_tst %*% attr(fit_trn, "BLUP_u"))[,1]
-cor(pred_BV1_SNPs, setNames(pedDat$bv1, pedDat$ind_id)[names(pred_BV1_SNPs)])
+(corP <- cor(pred_BV1_SNPs, setNames(pedDat$bv1, pedDat$ind_id)[names(pred_BV1_SNPs)]))
 plot(pred_BV1_SNPs, setNames(pedDat$bv1, pedDat$ind_id)[names(pred_BV1_SNPs)],
-     main="Prediction accuracy with SNP effects",
+     main=paste0("Prediction accuracy with SNP effects",
+                 "\ncorP = ", round(corP,3)),
      xlab="predicted BV1 (last generation)",
      ylab="true BV1 (last generation)")
 ```
@@ -1310,43 +1300,93 @@ Left as an exercise.
 
 #### Trait 1
 
+##### Predict with A
+
 ```{r}
-length(y_trn <- setNames(pedDat$pheno1, pedDat$ind_id)[inds_trn])
+fitA1 <- vcLMM(data=pedDat, inds=inds_trn,
+               K=A, colY="pheno1", colZ="ind_id", pkg="rrBLUP")
 
-## With GRM_IBD
-## TODO
-
-## With A
 dim(G_trn_tst <- A[inds_trn, inds_tst])
 dim(G_trn <- A[inds_trn, inds_trn])
 lambda_hat <- attr(fitA1, "Ve") / attr(fitA1, "Vu")
-length(pred_BV1_A <- (t(G_trn_tst) %*% solve(G_trn + lambda_hat * diag(length(inds_trn))) %*% y_trn)[,1])
-cor(pred_BV1_A, setNames(pedDat$bv1, pedDat$ind_id)[names(pred_BV1_A)])
+#length(pred_BV1_A <- (t(G_trn_tst) %*% solve(G_trn + lambda_hat * diag(length(inds_trn))) %*% y_trn)[,1])
+pred_BV1_A <- (t(G_trn_tst) %*%
+                 solve(G_trn + lambda_hat * diag(length(inds_trn))) %*%
+                 (y_trn - attr(fitA1, "BLUE_beta")))[,1]
+(corP <- cor(pred_BV1_A, setNames(pedDat$bv1, pedDat$ind_id)[names(pred_BV1_A)]))
 plot(pred_BV1_A, setNames(pedDat$bv1, pedDat$ind_id)[names(pred_BV1_A)],
-     main="Prediction accuracy with A",
+     main=paste0("Prediction accuracy with A",
+                 "\ncorP = ", round(corP,3)),
      xlab="predicted BV1 (last generation)",
      ylab="true BV1 (last generation)")
+```
 
-## With GRM_VR1
+##### Predict with GRM_IBD
+
+```{r}
+fitI1 <- vcLMM(data=pedDat, inds=inds_trn,
+               K=GRM_IBD, colY="pheno1", colZ="ind_id", pkg="rrBLUP")
+
+dim(G_trn_tst <- GRM_IBD[inds_trn, inds_tst])
+dim(G_trn <- GRM_IBD[inds_trn, inds_trn])
+lambda_hat <- attr(fitI1, "Ve") / attr(fitI1, "Vu")
+#length(pred_BV1_IBD <- (t(G_trn_tst) %*% solve(G_trn + lambda_hat * diag(length(inds_trn))) %*% y_trn)[,1])
+pred_BV1_IBD <- (t(G_trn_tst) %*%
+                   solve(G_trn + lambda_hat * diag(length(inds_trn))) %*%
+                   (y_trn - attr(fitI1, "BLUE_beta")))[,1]
+(corP <- cor(pred_BV1_IBD, setNames(pedDat$bv1, pedDat$ind_id)[names(pred_BV1_IBD)]))
+plot(pred_BV1_IBD, setNames(pedDat$bv1, pedDat$ind_id)[names(pred_BV1_IBD)],
+     main=paste0("Prediction accuracy with GRM_IBD",
+                 "\ncorP = ", round(corP,3)),
+     xlab="predicted BV1 (last generation)",
+     ylab="true BV1 (last generation)")
+```
+
+##### Predict with GRM_VR1
+
+```{r}
+fitG1 <- vcLMM(data=pedDat, inds=inds_trn,
+               K=GRM_VR1, colY="pheno1", colZ="ind_id", pkg="rrBLUP")
+
 dim(G_trn_tst <- GRM_VR1[inds_trn, inds_tst])
 dim(G_trn <- GRM_VR1[inds_trn, inds_trn])
 lambda_hat <- attr(fitG1, "Ve") / attr(fitG1, "Vu")
-length(pred_BV1_VR1 <- (t(G_trn_tst) %*% solve(G_trn + lambda_hat * diag(length(inds_trn))) %*% y_trn)[,1])
-cor(pred_BV1_VR1, setNames(pedDat$bv1, pedDat$ind_id)[names(pred_BV1_VR1)])
+#length(pred_BV1_VR1 <- (t(G_trn_tst) %*% solve(G_trn + lambda_hat * diag(length(inds_trn))) %*% y_trn)[,1])
+pred_BV1_VR1 <- (t(G_trn_tst) %*%
+                   solve(G_trn + lambda_hat * diag(length(inds_trn))) %*%
+                   (y_trn - attr(fitG1, "BLUE_beta")))[,1]
+(corP <- cor(pred_BV1_VR1, setNames(pedDat$bv1, pedDat$ind_id)[names(pred_BV1_VR1)]))
 plot(pred_BV1_VR1, setNames(pedDat$bv1, pedDat$ind_id)[names(pred_BV1_VR1)],
-     main="Prediction accuracy with GRM_VR1",
+     main=paste0("Prediction accuracy with GRM_VR1",
+                 "\ncorP = ", round(corP,3)),
      xlab="predicted BV1 (last generation)",
      ylab="true BV1 (last generation)")
+```
 
-## With GRM_LDAK
-## TODO
+##### Predict with GRM_ldak
+
+```{r}
+fitL1 <- vcLMM(data=pedDat, inds=inds_trn,
+               K=GRM_ldak, colY="pheno1", colZ="ind_id", pkg="rrBLUP")
+
+dim(G_trn_tst <- GRM_ldak[inds_trn, inds_tst])
+dim(G_trn <- GRM_ldak[inds_trn, inds_trn])
+lambda_hat <- attr(fitL1, "Ve") / attr(fitL1, "Vu")
+#length(pred_BV1_ldak <- (t(G_trn_tst) %*% solve(G_trn + lambda_hat * diag(length(inds_trn))) %*% y_trn)[,1])
+pred_BV1_ldak <- (t(G_trn_tst) %*%
+                    solve(G_trn + lambda_hat * diag(length(inds_trn))) %*%
+                    (y_trn - attr(fitL1, "BLUE_beta")))[,1]
+(corP <- cor(pred_BV1_ldak, setNames(pedDat$bv1, pedDat$ind_id)[names(pred_BV1_ldak)]))
+plot(pred_BV1_ldak, setNames(pedDat$bv1, pedDat$ind_id)[names(pred_BV1_ldak)],
+     main=paste0("Prediction accuracy with GRM_ldak",
+                 "\ncorP = ", round(corP,3)),
+     xlab="predicted BV1 (last generation)",
+     ylab="true BV1 (last generation)")
 ```
 
 #### Trait 2
 
 Left as an exercise.
-
-
 
 <!-- ==================================================================== -->
 
@@ -1354,29 +1394,54 @@ Left as an exercise.
 
 Quite slow.
 
-## With the pedigree
+## Prepare the inputs
 
-```{r, eval=FALSE}
+```{r}
 inds <- as.character(pedDat$ind_id)
 colZ <- "ind_id"
 idx <- which(as.character(pedDat[,colZ]) %in% inds)
 subData <- droplevels(pedDat[idx,])
 subData$id <- factor(as.character(subData[,colZ]))
+```
 
-fitA12 <- mmer(fixed = cbind(pheno1, pheno2) ~ 1,
-               random = ~ vsr(id, Gu=A, Gtc=unsm(2)),
-               rcov = ~ vsr(units, Gtc=unsm(2)),
-               data=subData, nIters=10, verbose=FALSE)
+## With the pedigree
+
+```{r mvLMM_A, eval=TRUE}
+st <- system.time(
+  fitA12 <- mmer(fixed = cbind(pheno1, pheno2) ~ 1,
+                 random = ~ vsr(id, Gu=A, Gtc=unsm(2)),
+                 rcov = ~ vsr(units, Gtc=unsm(2)),
+                 data=subData, nIters=10, verbose=FALSE))
+st
+summary(fitA12)
+
+if(FALSE){
+  st <- system.time(
+    fitA12 <- mmec(fixed = cbind(pheno1, pheno2) ~ 1,
+                   random = ~ vsc(id, Gu=A, Gtc=usc(2)),
+                   rcov = ~ vsc(units, Gtc=usc(2)),
+                   data=subData, nIters=10, verbose=FALSE))
+  ## returns an error
+  st
+  summary(fitA12)
+}
 ```
 
 ## With markers, assuming LE
 
-TODO
+```{r mvLMM_VR1, eval=TRUE}
+st <- system.time(
+  fitG12 <- mmer(fixed = cbind(pheno1, pheno2) ~ 1,
+                 random = ~ vsr(id, Gu=GRM_VR1, Gtc=unsm(2)),
+                 rcov = ~ vsr(units, Gtc=unsm(2)),
+                 data=subData, nIters=10, verbose=FALSE))
+st
+summary(fitG12)
+```
 
 ## With markers, handling LD
 
 TODO
-
 
 
 # Appendix
