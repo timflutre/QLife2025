@@ -78,8 +78,7 @@ Relationships are always interpreted with respect to a reference population. Wit
 
 ## Linear mixed model
 
-Estimating variance components requires a **linear mixed model** (LMM) whose generic form is: $\boldsymbol{y} = X \boldsymbol{\beta} + Z \boldsymbol{u} + \boldsymbol{\epsilon}$, where $\boldsymbol{y}$ is the $n$-vector of phenotypes, $X$ is the $n \times p$ design matrix for the explanatory factors whose effects, $\boldsymbol{\beta}$, are modeled as "fixed", $Z$ is the $n \times q$ design matrix for the explanatory factors whose effects, $\boldsymbol{u}$, are modeled as "random", and $\boldsymbol{\epsilon}$ are residual errors. Moreover, $E[\boldsymbol{u}]=0$, $Var(\boldsymbol{u})=G(\gamma)$, $E[\boldsymbol{\epsilon}]=0$, $Var(\boldsymbol{\epsilon})=R(\phi)$, and $Cov(\boldsymbol{u},\boldsymbol{\epsilon})=0$.
-Caution, the $G$ matrix above does NOT correspond to the genetic variance-covariance matrix between multiple traits as used in evolutionary quantitative genetics.
+Estimating variance components requires a **linear mixed model** (LMM) whose generic form is: $\boldsymbol{y} = X \boldsymbol{\beta} + Z \boldsymbol{u} + \boldsymbol{\epsilon}$, where $\boldsymbol{y}$ is the $n$-vector of phenotypes, $X$ is the $n \times p$ design matrix for the explanatory factors whose effects, $\boldsymbol{\beta}$, are modeled as "fixed", $Z$ is the $n \times q$ design matrix for the explanatory factors whose effects, $\boldsymbol{u}$, are modeled as "random", and $\boldsymbol{\epsilon}$ are residual errors. Moreover, $E[\boldsymbol{u}]=0$, $Var(\boldsymbol{u})=G(\gamma)$, $E[\boldsymbol{\epsilon}]=0$, $Var(\boldsymbol{\epsilon})=R(\phi)$, and $Cov(\boldsymbol{u},\boldsymbol{\epsilon})=0$. Caution, the $G$ matrix above does NOT correspond to the genetic variance-covariance matrix between multiple traits as used in evolutionary quantitative genetics.
 
 In classical quantitative genetics, the specific type of LMM used to estimate the additive genetic variance is called a *variance-component* model (vc-LMM): $\boldsymbol{y} = X \boldsymbol{\beta} + Z \boldsymbol{g}_a + \boldsymbol{\epsilon}$. The additive genetic values, $\boldsymbol{g}_a$, are modeled as random, and their variance-covariance matrix is $G(\gamma) := \sigma_u^2 \, A$, so that $\gamma := \sigma_u^2$. Moreover, the variance-covariance matrix of the residual errors usually is $R(\phi) := \sigma^2 \, \text{Id}_n$ so that $\phi := \sigma^2$. In practice, the variance components $\sigma_u^2$ and $\sigma^2$ are often estimated by **restricted maximum likelihood** (ReML).
 
@@ -89,13 +88,9 @@ More generally, the genetic variance component, $\sigma_u^2$, corresponds to the
 
 The **mixed model equations** (MMEs) are used to obtain formulas for the best linear unbiased estimator (BLUE) of the fixed effects, and the **best linear unbiased predictor** (BLUP) of the random effects: $BLUP(\boldsymbol{u}) = G Z^T V^{-1} (\boldsymbol{y} - X \boldsymbol{\beta})$ where $V := Var(\boldsymbol{y}) = Z G Z^T + R$. When the estimates of the variance components are used, the so-called empirical BLUPs (eBLUPs) can be computed.
 
-The additive genetic values of unphenotyped individuals can be predicted as long as their additive genetic relationships with phenotyped individuals, $G_{trn,tst}$, are known.
-Indeed, following [Henderson (1977)](https://linkinghub.elsevier.com/retrieve/pii/S0022030277839350) and [Lopez-Cruz and De Los Campos (2021)](https://academic.oup.com/genetics/article/doi/10.1093/genetics/iyab030/6179494), the data set can be partitioned into a training (trn) and testing (tst) set.
-The objective is to predict the genetic values of the individuals in the testing set ($\boldsymbol{u}_{tst}$) using the phenotype data available from the training set ($\boldsymbol{y}_{trn}$).
-The best linear predictor is: \begin{align}
+The additive genetic values of unphenotyped individuals can be predicted as long as their additive genetic relationships with phenotyped individuals, $G_{trn,tst}$, are known. Indeed, following [Henderson (1977)](https://linkinghub.elsevier.com/retrieve/pii/S0022030277839350) and [Lopez-Cruz and De Los Campos (2021)](https://academic.oup.com/genetics/article/doi/10.1093/genetics/iyab030/6179494), the data set can be partitioned into a training (trn) and testing (tst) set. The objective is to predict the genetic values of the individuals in the testing set ($\boldsymbol{u}_{tst}$) using the phenotype data available from the training set ($\boldsymbol{y}_{trn}$). After centering, the best linear predictor is: \begin{align}
 \hat{\boldsymbol{u}}_{tst} = G^T_{trn,tst} (G_{trn} + \hat{\lambda} I)^{-1} \boldsymbol{y}_{trn}
-\end{align}
-where $\hat{\lambda} := \hat{\sigma}^2 / \hat{\sigma}_u^2$.
+\end{align} where $\hat{\lambda} := \hat{\sigma}^2 / \hat{\sigma}_u^2$.
 
 ## Mendelian deviations
 
@@ -111,8 +106,7 @@ Importantly, Mendelian deviations are what breeding relies on in order to obtain
 
 In all scenarios, first, a neutral coalescent is used as a burn-in phase to simulate a population (with `msprime`), then 10 generations are done via forward-in-time simulations (with `simuPOP`). The population size is constant, with 100 individuals at each generation.
 
-For each scenario, two correlated traits are simulated. Both traits are in complete pleiotropy, and the effect of their QTLs are correlated. The first trait has a medium heritability whereas the second has a high heritability.
-In scenarios with selection, only the first trait is directly under selection, the second being indirectly selected.
+For each scenario, two correlated traits are simulated. Both traits are in complete pleiotropy, and the effect of their QTLs are correlated. The first trait has a medium heritability whereas the second has a high heritability. In scenarios with selection, only the first trait is directly under selection, the second being indirectly selected.
 
 ## Simulation outputs
 
@@ -163,6 +157,7 @@ python src/main.py -savedFolder "genpred_simul3" -optim 5 -varW 10 -G 10 -N 100 
 # Load all the data
 
 Change this to load the data from different simulations:
+
 ```{r}
 simulDir <- "genpred_simul2"
 ```
@@ -179,15 +174,16 @@ str(pedDat)
 Based on the generations, subset the individuals in four sets: the first for generation 0, the second for all generations except 0, the third for the last generation, and the fourth for all generation except 0 and the last.
 
 ```{r}
-length(unique(pedDat$ind_id))
-rownames(pedDat) <- as.character(pedDat$ind_id)
+stopifnot(length(unique(pedDat$ind_id)) == nrow(pedDat))
+pedDat$ind_id <- as.character(pedDat$ind_id)
+rownames(pedDat) <- pedDat$ind_id
 table(pedDat$generation)
-length(inds_gen0 <- pedDat$ind_id[pedDat$generation == "0"])
-length(inds_not0 <- pedDat$ind_id[pedDat$generation != "0"])
-length(inds_last <- pedDat$ind_id[pedDat$generation == max(pedDat$generation)])
-length(inds_notlast <- pedDat$ind_id[pedDat$generation != max(pedDat$generation)])
-length(inds_mid <- pedDat$ind_id[! pedDat$ind_id %in% inds_gen0 &
-                                 ! pedDat$ind_id %in% inds_last])
+inds_gen0 <- pedDat$ind_id[pedDat$generation == "0"]
+inds_not0 <- pedDat$ind_id[pedDat$generation != "0"]
+inds_last <- pedDat$ind_id[pedDat$generation == max(pedDat$generation)]
+inds_notlast <- pedDat$ind_id[pedDat$generation != max(pedDat$generation)]
+inds_mid <- pedDat$ind_id[! pedDat$ind_id %in% inds_gen0 &
+                            ! pedDat$ind_id %in% inds_last]
 pedDat$generation <- factor(as.character(pedDat$generation),
                             levels=as.character(sort(unique(pedDat$generation))),
                             ordered=TRUE)
@@ -201,9 +197,11 @@ Keep the true genetic variances:
 
 ```{r}
 #| code-fold: true
-(truth <- list("trait1"=list(varBV_gen0=var(pedDat[inds_gen0, "bv1"]),
+(truth <- list("trait1"=list(varBV_all=var(pedDat[, "bv1"]),
+                             varBV_gen0=var(pedDat[inds_gen0, "bv1"]),
                              varBV_not0=var(pedDat[inds_not0, "bv1"])),
-               "trait2"=list(varBV_gen0=var(pedDat[inds_gen0, "bv2"]),
+               "trait2"=list(varBV_all=var(pedDat[, "bv2"]),
+                             varBV_gen0=var(pedDat[inds_gen0, "bv2"]),
                              varBV_not0=var(pedDat[inds_not0, "bv2"])),
                "trait1-trait2"=list(corBV_gen0=cor(pedDat[inds_gen0, "bv1"],
                                                    pedDat[inds_gen0, "bv2"]))))
@@ -309,6 +307,74 @@ IBDs[1:3, 1:8]
 
 # Estimate genetic relationships
 
+## Reference populations
+
+As reminded above, the reference population for pedigree relationships is non-ambiguous: it is the base population made of founders, that are assumed unrelated. However, the reference population is not so clear in the case of genomic estimators. When fitting two vc-LMMs, each with a different matrix of genetic relationships, $K_1$ and $K_2$, the estimates of the genetic variance component, $\sigma_{u,1}^2$ and $\sigma_{u,2}^2$, will usually be different. Leaving their uncertainty aside, does the difference only come from the fact that genomic relationships are more accurate? As shown below, notice that all pedigree relationships are positive whereas genomic relationships can be negative. The difference between estimates also come from the fact that both relationships are not on the same scale because they have different reference populations.
+
+Following [Legarra (2016)](http://dx.doi.org/10.1016/j.tpb.2015.08.005), let $\boldsymbol{u}$ be the vector of genetic values of individuals *in the reference population*, assuming $E[\boldsymbol{u}] = 0$ and $Var(\boldsymbol{u}) = \sigma_u^2 K$ where $K$ is the matrix of genetic relationships.
+
+-   The genetic variance is defined as: $S_u^2 := \frac{1}{n} \sum_i (u_i - \bar{u})^2$.
+
+-   In matrix form: $S_u^2 = \frac{1}{n} \boldsymbol{u}^T \boldsymbol{u} - \frac{1}{n^2} \boldsymbol{1}^T \boldsymbol{u}^T \boldsymbol{u} \boldsymbol{1}$.
+
+Because the genetic values are unknown, their genetic variance is unknown, too. So let us look at its expectation: $E[S_u^2] = \frac{1}{n} \sigma_u^2 tr(K) - \frac{1}{n^2} \sigma_u^2 \boldsymbol{1}^T K \boldsymbol{1} = D_K \; \sigma_u^2$ where $D_K := (\bar{diag(K)} - \bar{K})$.
+For the variance component $\sigma_u^2$ of a vc-LMM to directly correspond to the genetic variance in the reference population, $S_u^2$, the relationship matrix $K$ should be made so that $D_K = 1$.
+
+At Hardy--Weinberg equilibrium, it can be shown that $D_K=1$ for genomic relationship matrices obtained with Van Raden's estimators (see below). These estimators assume that the reference population is a population at HWE with allele frequencies equal to the allele frequencies observed in the sample, and that the locus are at linkage equilibrium. If the sample is indeed at HWE, the diagonal of Van Raden's GRM should be centered on 1 and the off-diagonal on 0.
+
+Concretely, in order to compare $\sigma_{u,P}^2$ (from the pedigree) and $\sigma_{u,GRM_{VR1}}^2$ (Van Raden's 1st estimator), we need to refer them to the same reference population. Usually, the founders cannot be genotyped, the chose reference population hence is the one made of the genotyped individuals. Thus: $S_{u,GRM_{VR1}}^2 = \sigma_{u,GRM_{VR1}}^2$ and $S_{u,P}^2 = D_P \, \sigma_{u,P}^2$ with $D_P := 1 - \bar{F}_P$ where $\bar{F}_P = \bar{diag(A)} - 1$. The definition of $D_P$ shows the reduction of genetic variance in the current population compared to the the founders because of relatedness among non-founders.
+
+## Expected relationships from the pedigree
+
+### Reformat
+
+Make a specific object with the `kinship2` package:
+
+```{r}
+ped <- pedigree(id=as.integer(pedDat$ind_id),
+                dadid=as.integer(pedDat$father_id),
+                momid=as.integer(pedDat$mother_id),
+                sex=pedDat$sex)
+ped
+```
+
+```{r, fig.width=10, eval=FALSE}
+#| code-fold: true
+plot(ped)
+```
+
+### Compute kinship
+
+Estimate the coancestry coefficient, the `kinship` function using a recursive algorithm described in Lange's book "Mathematical and statistical methods for genetics analysis" (ch.5 on genetic identity coefficients):
+
+```{r}
+A <- 2 * kinship(ped)
+dim(A)
+```
+
+### Plots
+
+#### All generations
+
+```{r, fig.width=10}
+image(as(A, "Matrix"), main=paste0("A (all generations)\n", simulDir))
+summary(c(A))
+summary(diag(A))
+summary(A[upper.tri(A)])
+(D_A <- mean(diag(A)) - mean(c(A)))
+hist(diag(A), main=paste0("diag of A (all generations)\n", simulDir))
+hist(A[upper.tri(A)], main=paste0("offdiag of A (all generations)\n", simulDir))
+```
+
+#### Generation 0
+
+```{r, fig.width=10}
+A_gen0 <- A[inds_gen0, inds_gen0]
+image(as(A_gen0, "Matrix"), main=paste0("A (generation 0)\n", simulDir))
+summary(diag(A_gen0))
+summary(A_gen0[upper.tri(A_gen0)])
+```
+
 ## True IBD relationships
 
 ### Function
@@ -367,66 +433,24 @@ GRM_IBD_mid <- GRM_IBD[inds_mid, inds_mid]
 
 ### Plots
 
+#### All generations
+
 ```{r, fig.width=10}
-#| code-fold: true
 image(as(GRM_IBD, "Matrix"), main=paste0("GRM_IBD (all generations)\n", simulDir))
+summary(c(GRM_IBD))
+summary(diag(GRM_IBD))
+summary(GRM_IBD[upper.tri(GRM_IBD)])
+(D_IBD <- mean(diag(GRM_IBD)) - mean(c(GRM_IBD)))
 hist(diag(GRM_IBD), main=paste0("diag of GRM_IBD (all generations)\n", simulDir))
 hist(GRM_IBD[upper.tri(GRM_IBD)], main=paste0("offdiag of GRM_IBD (all generations)\n", simulDir))
+```
 
+#### Generation 0
+
+```{r, fig.width=10}
 image(as(GRM_IBD_gen0, "Matrix"), main=paste0("GRM_IBD (generation 0)\n", simulDir))
 summary(diag(GRM_IBD_gen0))
 summary(GRM_IBD_gen0[upper.tri(GRM_IBD_gen0)])
-
-if(FALSE){
-  image(as(GRM_IBD_not0, "Matrix"), main=paste0("GRM_IBD (except generation 0)\n", simulDir))
-  hist(diag(GRM_IBD_not0))
-  hist(GRM_IBD_not0[upper.tri(GRM_IBD_not0)])
-  
-  image(as(GRM_IBD_mid, "Matrix"), main=paste0("GRM_IBD (except first and last generations)\n", simulDir))
-  hist(diag(GRM_IBD_mid))
-  hist(GRM_IBD_mid[upper.tri(GRM_IBD_mid)])
-}
-```
-
-## Expected relationships from the pedigree
-
-### Reformat
-
-Make a specific object with the `kinship2` package:
-
-```{r}
-ped <- pedigree(id=pedDat$ind_id,
-                dadid=pedDat$father_id,
-                momid=pedDat$mother_id,
-                sex=pedDat$sex)
-ped
-```
-
-```{r, fig.width=10, eval=FALSE}
-#| code-fold: true
-plot(ped)
-```
-
-### Compute kinship
-
-Estimate the coancestry coefficient, the `kinship` function using a recursive algorithm described in Lange's book "Mathematical and statistical methods for genetics analysis" (ch.5 on genetic identity coefficients):
-
-```{r}
-A <- 2 * kinship(ped)
-dim(A)
-```
-
-### Plots
-
-```{r, fig.width=10}
-image(as(A, "Matrix"), main=paste0("A (all generations)\n", simulDir))
-hist(diag(A), main=paste0("diag of A (all generations)\n", simulDir))
-hist(A[upper.tri(A)], main=paste0("offdiag of A (all generations)\n", simulDir))
-
-A_gen0 <- A[inds_gen0, inds_gen0]
-image(as(A_gen0, "Matrix"), main=paste0("A (generation 0)\n", simulDir))
-summary(diag(A_gen0))
-summary(A_gen0[upper.tri(A_gen0)])
 ```
 
 ## Realized relationships from markers
@@ -442,10 +466,13 @@ See also [Toro et al (2011)](http://www.gsejournal.org/content/43/1/27).
 #### First estimator (VR1)
 
 The estimator of molecular covariance is computed for each locus, summed over all locus, and then standardized by the total molecular variance: \begin{align}
-\hat{A}_{ii'}^{(VR1)} = \frac{1}{L} \frac{\sum_{l=1}^L (M_{il} - 2 \hat{f}_l)(M_{i'l} - 2 \hat{f}_l)}{2 \sum_{l=1}^L \hat{f}_l (1 - \hat{f}_l)}
+\hat{GRM}_{ii'}^{(VR1)} = \frac{1}{L} \frac{\sum_{l=1}^L (M_{il} - 2 \hat{f}_l)(M_{i'l} - 2 \hat{f}_l)}{2 \sum_{l=1}^L \hat{f}_l (1 - \hat{f}_l)}
 \end{align}
+where $M$ is the $n \times L$ matrix of SNP genotypes encoded in allele doses (number of copies of an arbitrarily-chosen allele at each SNP) so that $M_{il} \in [0,2]$.
 
-Following [Schreck et al (2019)](https://academic.oup.com/genetics/article/213/2/379/5930631), in matrix form, let $P := \text{Id}_n - \boldsymbol{1}_n \boldsymbol{1}_n^T / n$ be the $n \times n$ matrix used for column-wise mean-centering, and $c := 2 \sum_l \hat{f}_l (1 - \hat{f}_l)$, so that $GRM_{VR1} := P M M^T P / c$.
+Following [Schreck et al (2019)](https://academic.oup.com/genetics/article/213/2/379/5930631), in matrix form, let $P := \text{Id}_n - \boldsymbol{1}_n \boldsymbol{1}_n^T / n$ be the $n \times n$ matrix used for column-wise mean-centering, and $c_{VR1} := 2 \sum_l \hat{f}_l (1 - \hat{f}_l)$, so that $GRM_{VR1} := P M M^T P / c_{VR1}$.
+
+See the extension to the dominant genetic relationships in [Vitezica et al (2013)](http://dx.doi.org/10.1534/genetics.113.155176).
 
 ```{r}
 ##' @param mat n x p numeric matrix, with individuals in rows and SNPs in columns; if all values are positive, the columns will be centered using the allele frequencies in `AFs`
@@ -494,6 +521,7 @@ if(FALSE){
 
 ```{r, fig.width=10}
 AFs_VR1 <- colMeans(genos) / 2
+(c_VR1 <- (2 * sum(AFs_VR1 * (1 - AFs_VR1))))
 hist(AFs_VR1)
 
 tmp <- matrix(rep(1, nrow(genos))) %*% (2 * AFs_VR1)
@@ -501,6 +529,10 @@ Z_VR1 <- genos - tmp
 GRM_VR1 <- estimVanRanden1(Z_VR1, AFs_VR1)
 
 image(as(GRM_VR1, "Matrix"), main=paste0("GRM_VR1 (all generations)\n", simulDir))
+summary(c(GRM_VR1))
+summary(diag(GRM_VR1))
+summary(GRM_VR1[upper.tri(GRM_VR1)])
+(D_VR1 <- mean(diag(GRM_VR1)) - mean(c(GRM_VR1)))
 hist(diag(GRM_VR1), main=paste0("diag of GRM_VR1 (all generations)\n", simulDir))
 hist(GRM_VR1[upper.tri(GRM_VR1)], main=paste0("offdiag of GRM_VR1 (all generations)\n", simulDir))
 ```
@@ -523,29 +555,25 @@ hist(GRM_VR1_gen0[upper.tri(GRM_VR1_gen0)], main=paste0("offdiag of GRM_VR1 ( ge
 #### Second estimator (VR2)
 
 The estimator of molecular covariance is computed for each locus, standardized, and then summed over all locus: \begin{align}
-\hat{A}_{ii'}^{(VR2)} = \frac{1}{L} \sum_{l=1}^L \frac{(M_{il} - 2 f_l)(M_{i'l} - 2 f_l)}{2 f_l (1 - f_l)}
+\hat{GRM}_{ii'}^{(VR2)} = \frac{1}{L} \sum_{l=1}^L \frac{(M_{il} - 2 f_l)(M_{i'l} - 2 f_l)}{2 f_l (1 - f_l)}
 \end{align}
 
 Although this estimator and similar ones are recommended by several authors, such as [Astle and Balding (2009)](http://dx.doi.org/10.1214/09-sts307) and [Yang et al (2010)](http://dx.doi.org/10.1038/ng.608), [Toro et al (2011)](http://www.gsejournal.org/content/43/1/27) advised against their use "because it does not agree well with genealogical coancestries, the distribution of coancestries has more variance, and it is unstable for minor allelic frequencies close to 0 and undefined for monomorphic loci".
 
 ### Departure from HWE with NOIA
 
-Genomic relationship matrices for genetic values (additive, dominant, epistatic) can be defined in such a way as the genetic variance is partitioned into independent variance components with no covariance between them.
-As a result, the estimation of one type of genetic (i.e., additive) effects will not be affected by the presence or absence of another type of genetic effects in the model (i.e., epistasis).
+Genomic relationship matrices for genetic values (additive, dominant, epistatic) can be defined in such a way as the genetic variance is partitioned into independent variance components with no covariance between them. As a result, the estimation of one type of genetic (e.g., additive) effects will not be affected by the presence or absence of another type of genetic effects in the model (e.g., epistasis).
 
-See the NOIA estimator:
-
--   Vitezica ZG, Legarra A, Toro MA, Varona L. 2017. Orthogonal Estimates of Variances for Additive, Dominance, and Epistatic Effects in Populations. Genetics. 206(3):1297--1307. doi:10.1534/genetics.116.199406.
+See the NOIA estimator described in [Vitezica et al (2017)](http://www.genetics.org/content/206/3/1297).
+Still, as the authors wrote, "although the NOIA model removes the assumption of HWE, another factor that generates nonindependence between loci and lack of orthogonality is linkage disequilibrium."
 
 ### Handling LD with LDAK
 
-When SNP genotypes are in linkage disequilibrium, the effect of a causal gene (QTL) ends up being allocated among its tagging SNPs, i.e., non-causal SNPs in LD with the QTL.
-Speed, Balding and co-workers hence proposed to estimate genomic relatedness with a weight for each SNP, as implemented in the [LDAK software](http://ldak.org).
-The sum of weights for a set of SNPs decreases as the LD amongst the SNPs increases, so that SNPs in low-LD regions contribute more to SNP heritability than those in high-LD regions.
+When SNP genotypes are in linkage disequilibrium, the effect of a causal gene (QTL) ends up being allocated among its tagging SNPs, i.e., non-causal SNPs in LD with the QTL. Speed, Balding and co-workers hence proposed to estimate genomic relatedness with a weight for each SNP, as implemented in the [LDAK software](http://ldak.org). The sum of weights for a set of SNPs decreases as the LD amongst the SNPs increases, so that SNPs in low-LD regions contribute more to SNP heritability than those in high-LD regions.
 
 -   Speed D, Hemani G, Johnson M, Balding D. 2012. Improved heritability estimation from genome-wide SNPs. American journal of human genetics. 91(6):1011--1021. doi:10.1016/j.ajhg.2012.10.010.
 
--   the UCLEB Consortium, Speed D, Cai N, Johnson MR, Nejentsev S, Balding DJ. 2017. Reevaluation of SNP heritability in complex human traits. Nat Genet. 49(7):986–992. doi:10.1038/ng.3865.
+-   the UCLEB Consortium, Speed D, Cai N, Johnson MR, Nejentsev S, Balding DJ. 2017. Reevaluation of SNP heritability in complex human traits. Nat Genet. 49(7):986--992. doi:10.1038/ng.3865.
 
 -   Speed D, Kaphle A, Balding DJ. 2022. SNP‐based heritability and selection analyses: Improved models and new results. BioEssays. 44(5):2100170. doi:10.1002/bies.202100170.
 
@@ -612,13 +640,23 @@ GRM_ldak_not0 <- GRM_ldak[inds_not0, inds_not0]
 GRM_ldak_mid <- GRM_ldak[inds_mid, inds_mid]
 ```
 
-#### Plot
+#### Plots
 
-```{r}
+##### All generations
+
+```{r, fig.width=10}
 image(as(GRM_ldak, "Matrix"), main=paste0("GRM_LDAK (all generations)\n", simulDir))
+summary(c(GRM_ldak))
+summary(diag(GRM_ldak))
+summary(GRM_ldak[upper.tri(GRM_ldak)])
+(D_LDAK <- mean(diag(GRM_ldak)) - mean(c(GRM_ldak)))
 hist(diag(GRM_ldak), main=paste0("diag of GRM_LDAK (all generations)\n", simulDir))
 hist(GRM_ldak[upper.tri(GRM_ldak)], main=paste0("offdiag of GRM_LDAK (all generations)\n", simulDir))
+```
 
+##### Generation 0
+
+```{r, fig.width=10}
 image(as(GRM_ldak_gen0, "Matrix"), main=paste0("GRM_LDAK (generation 0)\n", simulDir))
 hist(diag(GRM_ldak_gen0), main=paste0("diag of GRM_LDAK (generation 0)\n", simulDir))
 hist(GRM_ldak_gen0[upper.tri(GRM_ldak_gen0)], main=paste0("offdiag of GRM_LDAK (generation 0)\n", simulDir))
@@ -778,15 +816,114 @@ ggplot(genRels[genRels$not0,]) +
 
 <!-- ==================================================================== -->
 
-# Analysis per trait
+# Univariate statistical analysis per trait
 
 ## Estimate variance components
 
+### Models
+
+#### ABLUP/PBLUP
+
+The **ABLUP** model, also called PBLUP, is the following vc-LMM:
+
+```{=tex}
+\begin{align}
+y = \boldsymbol{\text{1}}_n \, \mu_A + \boldsymbol{u}_A + \boldsymbol{\epsilon}_A
+\end{align}
+```
+-   $\boldsymbol{u}_A \sim \mathcal{N}(\boldsymbol{0}, \sigma_{u,A}^2 \, A)$
+
+    -   $A$: $n \times n$ matrix of additive genetic relationships obtained from the pedigree
+
+    -   $\boldsymbol{u}_A$: $n$-vector of additive genetic values modeled as random
+
+    -   $\sigma_{u,A}^2$: genetic variance component
+
+-   $\boldsymbol{\epsilon}_A \sim \mathcal{N}(\boldsymbol{0}, \sigma^2 \, \text{Id})$.
+
+#### GBLUP
+
+The **GBLUP** model is the following vc-LMM:
+
+```{=tex}
+\begin{align}
+y = \boldsymbol{\text{1}}_n \, \mu_G + \boldsymbol{u}_G + \boldsymbol{\epsilon}_G
+\end{align}
+```
+-   $\boldsymbol{u}_G \sim \mathcal{N}(\boldsymbol{0}, \sigma_{u,G}^2 \, GRM)$
+
+    -   $GRM$: $n \times n$ genomic relationship matrix, e.g., from Van Raden's first estimator
+
+    -   $\boldsymbol{u}_G$: $n$-vector of additive genomic values modeled as random
+
+    -   $\sigma_{u,G}^2$: genetic variance component
+
+-   $\boldsymbol{\epsilon}_G \sim \mathcal{N}(\boldsymbol{0}, \sigma_G^2 \, \text{Id})$.
+
+#### SNPBLUP
+
+The **SNPBLUP** model is the following vc-LMM:
+
+```{=tex}
+\begin{align}
+y = \boldsymbol{\text{1}}_n \, \mu_S + Z \, \boldsymbol{\beta} + \boldsymbol{\epsilon}_S
+\end{align}
+```
+
+-   $Z$: $n \times L$ matrix of SNP genotypes, *considered fixed* (see below how SNP genotypes should be encoded for SNPBLUP to be equivalent to GBLUP)
+
+-   $\boldsymbol{\beta} \sim \mathcal{N}(\boldsymbol{0}, \sigma_{\beta}^2 \, \text{Id})$
+
+    - $\boldsymbol{\beta}$: $L$-vector of allelic effects, *modeled as random*
+
+    -   $\sigma_\beta^2$: genetic variance component
+
+-   $\boldsymbol{\epsilon}_S \sim \mathcal{N}(\boldsymbol{0}, \sigma_S^2 \, \text{Id})$.
+
+
+The **SNPBLUP** model consists in decomposing the additive genomic values $\boldsymbol{u}_G$ into the matrix of SNP genotypes $M$ and the vector of SNP effects $\boldsymbol{\beta}$:
+
+```{=tex}
+\begin{align}
+y = \boldsymbol{\text{1}}_n \, \mu_S + \boldsymbol{u}_S + \boldsymbol{\epsilon}_S
+\end{align}
+```
+-   $\boldsymbol{u}_S := P M \boldsymbol{\beta} = \left[ \sum_{l=1}^L (M_{il} - M_{.l}) \beta_l \right]_{i \in \{1,\ldots,n\}}$
+
+    -   $\boldsymbol{u}_S$: $n$-vector of additive genomic values modeled as random
+
+    -   $P$: $n \times n$ column-wise, mean-centering matrix
+
+    -   $M$: $n \times p$ matrix of SNP genotypes, *considered fixed*
+
+#### Equivalence of SNPBLUP and GBLUP
+
+Let us define $\boldsymbol{u}_S := Z \boldsymbol{\beta}$ so that $y = \boldsymbol{\text{1}}_n \, \mu_S + \boldsymbol{u}_S + \boldsymbol{\epsilon}_S$.
+
+Following [Schreck et al (2019)](https://academic.oup.com/genetics/article/213/2/379/5930631), for GBLUP and SNPBLUP to be equivalent, $\boldsymbol{u}_S$ and $\boldsymbol{u}_G$ should be equal in distribution, which is the case under two conditions:
+
+-   $Z$ should be column-wise mean-centered so that $\bar{\boldsymbol{u}}_S = \bar{\boldsymbol{u}}_G = 0$, which can be achieved by defining $Z := P M$, where $M$ is the $n \times L$ matrix of SNP genotypes encoded in allele doses (number of copies of an arbitrarily-chosen allele at each SNP) so that $M_{il} \in [0,2]$, and $P := \text{Id}_n - \boldsymbol{1}_n \boldsymbol{1}_n^T / n$ is the $n \times n$ matrix used for column-wise mean-centering as defined above for Van Raden's first estimator;
+
+-   in the vc-LMM, SNP genotypes should be modeled as fixed and allelic effects as random, so that $Cov(\boldsymbol{u}_S) := Cov(P M \boldsymbol{\beta}) = PM Cov(\boldsymbol{\beta}) M^T P^T = \sigma_{\beta}^2 \times c_{VR1} \; GRM_{VR1}$ and thus $\sigma_{u,S}^2 := c_{VR1} \, \sigma_{\beta}^2 = \sigma_{u,G}^2$.
+
+#### Genetic vs. genomic variance
+
+TODO: explain what $\sigma_u^2$ is, as trace of cov(ui,uj)
+
+#### LDAK approach
+
+TODO
+
 ### Implementation
 
-```{r}
-vcLMM <- function(data, inds, K, Z, colY="pheno1", colZ="ind_id",
-                  method="REML", pkg="rrBLUP"){
+The R function below fits a variance-component linear mixed model (vc-LMM) as written in the reminders above. Two packages can be used, [rrBLUP](https://cran.r-project.org/package=rrBLUP) and [sommer](https://cran.r-project.org/package=sommer), both implementing algorithms for ReML.
+
+-   When choosing sommer, if no kinship is given (missing argument K), a SNPBLUP model will be fitted, otherwise a GBLUP model will be fitted; more details below.
+
+-   When choosing sommer, a GBLUP model is fitted and the best predictor of the genetic variance from Schreck et al (2019) is returned; more details below.
+
+```{r implem_vcLMM}
+vcLMM <- function(data, inds, K, Z, colY="pheno1", colZ="ind_id", pkg="rrBLUP"){
   ## check the inputs
   stopifnot(is.data.frame(data),
             is.character(inds),
@@ -820,7 +957,7 @@ vcLMM <- function(data, inds, K, Z, colY="pheno1", colZ="ind_id",
       X <- matrix(1, nrow=nrow(subData))
       st <- system.time(
           fit <- mixed.solve(y=y, X=X, Z=Z, K=K, method="REML"))
-      subData$BLUP_u <- setNames(fit$u, colnames(Z))[subData[,colZ]]
+      subData$BLUP_u <- setNames(c(fit$u), colnames(Z))[subData[,colZ]]
     } else if(model == "SNPBLUP"){
       print("fit a SNPBLUP model with R/rrBLUP")
       Z <- Z[as.character(subData[,colZ]),]
@@ -828,12 +965,13 @@ vcLMM <- function(data, inds, K, Z, colY="pheno1", colZ="ind_id",
       X <- matrix(1, nrow=nrow(subData))
       st <- system.time(
           fit <- mixed.solve(y=y, X=X, Z=Z, K=NULL, method="REML"))
-      attr(subData, "BLUP_u") <- setNames(fit$u, colnames(Z))
-      subData$Z_BLUP_u <- Z %*% fit$u
+      attr(subData, "BLUP_u") <- setNames(c(fit$u), colnames(Z))
+      subData$Z_BLUP_u <- (Z %*% fit$u)[,1]
     }
     print(st)
     attr(subData, "Vu") <- fit$Vu
     attr(subData, "Ve") <- fit$Ve
+    attr(subData, "BLUE_beta") <- c(fit$beta)
 
   } else if(pkg == "sommer"){
     print("fit a GBLUP model with R/sommer + Schreck's best predictor")
@@ -900,7 +1038,7 @@ The following vc-LMM is adjusted:
 y = \boldsymbol{\text{1}}_n \mu + \boldsymbol{u}_I + \boldsymbol{\epsilon}_I
 \end{align}
 ```
--   $\boldsymbol{u}_I \sim \mathcal{N}(\boldsymbol{0}, \sigma_{u,I}^2 GRM_{IBD})$
+-   $\boldsymbol{u}_I \sim \mathcal{N}(\boldsymbol{0}, \sigma_{u,I}^2 \, GRM_{IBD})$
 
     -   $GRM_{IBD}$: $n \times n$ matrix of additive genetic relationships from the true identities by descent
 
@@ -908,7 +1046,7 @@ y = \boldsymbol{\text{1}}_n \mu + \boldsymbol{u}_I + \boldsymbol{\epsilon}_I
 
     -   $\sigma_{u,I}^2$: genetic variance component
 
--   $\boldsymbol{\epsilon}_I \sim \mathcal{N}(\boldsymbol{0}, \sigma_I^2 \text{Id})$.
+-   $\boldsymbol{\epsilon}_I \sim \mathcal{N}(\boldsymbol{0}, \sigma_I^2 \, \text{Id})$.
 
 #### Trait 1
 
@@ -916,17 +1054,23 @@ y = \boldsymbol{\text{1}}_n \mu + \boldsymbol{u}_I + \boldsymbol{\epsilon}_I
 
 ```{r, fig.width=10}
 fitI1 <- vcLMM(data=pedDat, inds=as.character(pedDat$ind_id),
-               K=GRM_IBD, colY="pheno1", colZ="ind_id",
-               method="REML", pkg="rrBLUP")
-attr(fitI1, "Vu")
-attr(fitI1, "Ve")
-attr(fitI1, "Vu") / (attr(fitI1, "Vu") + attr(fitI1, "Ve"))
+               K=GRM_IBD, colY="pheno1", colZ="ind_id", pkg="rrBLUP")
+
+c("Vu_hat"=attr(fitI1, "Vu"),
+  "Ve_hat"=attr(fitI1, "Ve"),
+  "h2_hat"=attr(fitI1, "Vu") / (attr(fitI1, "Vu") + attr(fitI1, "Ve")))
+c("true_Vu"=truth$trait1$varBV_all)
+attr(fitI1, "Vu") - truth$trait1$varBV_all
+100 * (attr(fitI1, "Vu") - truth$trait1$varBV_all) / truth$trait1$varBV_all
+
 cor(fitI1$BLUP_u, fitI1$bv1)
+
 fitI1$generation <- factor(as.character(fitI1$generation),
                            levels=as.character(sort(unique(fitI1$generation))),
                            ordered=TRUE)
+(mu_hat <- attr(fitI1, "BLUE_beta"))
 ggplot(fitI1) +
-  aes(x=BLUP_u, y=bv1, color=generation) +
+  aes(x=BLUP_u, y=bv1 - mu_hat, color=generation) +
   geom_abline(slope=1, intercept=0, linetype="dotted") +
   geom_point() +
   labs(title="Trait 1; GBLUP with GRM_IBD; all generations",
@@ -934,6 +1078,10 @@ ggplot(fitI1) +
        color="Generation") +
   theme_bw()
 ```
+
+#### Trait 2
+
+Left as an exercise.
 
 ### With the pedigree
 
@@ -960,42 +1108,26 @@ y = \boldsymbol{\text{1}}_n \mu + \boldsymbol{u}_P + \boldsymbol{\epsilon}_P
 
 ```{r, fig.width=10}
 fitA1 <- vcLMM(data=pedDat, inds=as.character(pedDat$ind_id),
-               K=A, colY="pheno1", colZ="ind_id",
-               method="REML", pkg="rrBLUP")
-attr(fitA1, "Vu")
-attr(fitA1, "Ve")
-attr(fitA1, "Vu") / (attr(fitA1, "Vu") + attr(fitA1, "Ve"))
+               K=A, colY="pheno1", colZ="ind_id", pkg="rrBLUP")
+
+c("Vu_hat"=attr(fitA1, "Vu"),
+  "Ve_hat"=attr(fitA1, "Ve"),
+  "h2_hat"=attr(fitA1, "Vu") / (attr(fitA1, "Vu") + attr(fitA1, "Ve")))
+c("true_Vu"=truth$trait1$varBV_all)
+attr(fitA1, "Vu") - truth$trait1$varBV_all
+100 * (attr(fitA1, "Vu") - truth$trait1$varBV_all) / truth$trait1$varBV_all
+
 cor(fitA1$BLUP_u, fitA1$bv1)
+
 fitA1$generation <- factor(as.character(fitA1$generation),
                            levels=as.character(sort(unique(fitA1$generation))),
                            ordered=TRUE)
+(mu_hat <- attr(fitA1, "BLUE_beta"))
 ggplot(fitA1) +
-  aes(x=BLUP_u, y=bv1, color=generation) +
+  aes(x=BLUP_u, y=bv1 - mu_hat, color=generation) +
   geom_abline(slope=1, intercept=0, linetype="dotted") +
   geom_point() +
   labs(title="Trait 1; ABLUP with pedigree; all generations",
-       subtitle=simulDir,
-       color="Generation") +
-  theme_bw()
-```
-
-##### All generations except 0
-
-```{r, fig.width=10}
-fitA1_not0 <- vcLMM(data=pedDat, inds=as.character(inds_not0),
-                    K=A, colY="pheno1", colZ="ind_id",
-                    method="REML", pkg="rrBLUP")
-attr(fitA1_not0, "Vu")
-attr(fitA1_not0, "Ve")
-attr(fitA1_not0, "Vu") / (attr(fitA1_not0, "Vu") + attr(fitA1_not0, "Ve"))
-cor(fitA1_not0$BLUP_u, fitA1_not0$bv1)
-fitA1_not0$generation <- factor(as.character(fitA1_not0$generation),
-                                levels=as.character(sort(unique(fitA1_not0$generation))),
-                                ordered=TRUE)
-ggplot(fitA1_not0) +
-  aes(x=BLUP_u, y=bv1, color=generation) +
-  geom_point() +
-  labs(title="Trait 1; ABLUP with pedigree; all generations except 0",
        subtitle=simulDir,
        color="Generation") +
   theme_bw()
@@ -1007,70 +1139,6 @@ Left as an exercise.
 
 ### With markers, assuming LE
 
-#### GBLUP
-
-The **GBLUP** model is the following vc-LMM:
-
-```{=tex}
-\begin{align}
-y = \boldsymbol{\text{1}}_n \mu + \boldsymbol{u}_G + \boldsymbol{\epsilon}_G
-\end{align}
-```
--   $\boldsymbol{u}_G \sim \mathcal{N}(\boldsymbol{0}, \sigma_{u,G}^2 \, GRM_{VR1})$
-
-    -   $GRM_{VR1}$: $n \times n$ matrix of additive genomic relationships obtained with the first estimator from Van Raden (2008)
-
-    -   $\boldsymbol{u}_G$: $n$-vector of genomic values modeled as random
-
-    -   $\sigma_{u,G}^2$: genetic variance component
-
--   $\boldsymbol{\epsilon}_G \sim \mathcal{N}(\boldsymbol{0}, \sigma_G^2 \, \text{Id})$.
-
-#### Comparison of genetic variance components with different reference populations
-
-As reminded above, the reference population for pedigree relationships is non-ambiguous: it is the base population made of founders. However, the reference population is not so clear in the case of genomic estimators. When fitting a vc-LMM with either $A$ or $GRM_{VR1}$, the estimates of the genetic variance component usually are different. Leaving their uncertainty aside, does the difference only come from the fact that genomic relationships are more accurate? Notice that all pedigree relationships are positive whereas genomic relationships can be negative. The difference between estimates also come from the fact that both relationships are not on the same scale because they have different reference populations.
-
-As explained in [Legarra (2016)](http://dx.doi.org/10.1016/j.tpb.2015.08.005), let $\boldsymbol{u}$ be the vector of genetic values of individuals *in the reference population*, assuming $E[\boldsymbol{u}] = 0$ and $Var(\boldsymbol{u}) = \sigma_u^2 K$. The genetic variance defined as: $S_u^2 := \frac{1}{n} \sum_i (u_i - \bar{u})^2$. In matrix form: $S_u^2 = \frac{1}{n} \boldsymbol{u}^T \boldsymbol{u} - \frac{1}{n^2} \boldsymbol{1}^T \boldsymbol{u}^T \boldsymbol{u} \boldsymbol{1}$. Because the genetic values are unknown, their genetic variance is unknown, too, and we need to look at its expectation: $E[S_u^2] = \frac{1}{n} \sigma_u^2 tr(K) - \frac{1}{n^2} \sigma_u^2 \boldsymbol{1}^T K \boldsymbol{1} = D_K \; \sigma_u^2$ where $D_K := (\bar{diag(K)} - \bar{K})$.
-
-Let then fit a vc-LMM. If $D_K = 1$, the genetic variance in the reference population, $S_u^2$, will correspond to the variance component $\sigma_u^2$, but not otherwise. Under Hardy--Weinberg equilibrium, it can be shown that $D_K=1$ for genomic relationship matrices obtained with Van Raden's estimators. These estimators assume that the reference population is a population at HWE with allele frequencies equal to the allele frequencies observed in the sample, and that the locus are at linkage equilibrium. If the sample is at HWE, the diagonal of the GRM should be centered on 1 and the off-diagonal on 0.
-
-Concretely, in order to compare $\sigma_{u,P}^2$ and $\sigma_{u,GRM_{VR1}}^2$, we need to refer them to the same reference population. Usually, the founders cannot be genotyped, the chose reference population hence is the one made of the genotyped individuals. Thus: $S_{u,GRM_{VR1}}^2 = \sigma_{u,GRM_{VR1}}^2$ and $S_{u,P}^2 = D_P \, \sigma_{u,P}^2$ with $D_P := 1 - \bar{F}_P$ where $\bar{F}_P = \bar{diag(A)} - 1$. The definition of $D_P$ shows the reduction of genetic variance in the current population compared to the the founders because of relatedness among non-founders.
-
-#### SNPBLUP
-
-Another vc-LMM model, called **SNPBLUP** can also be defined, that consists in decomposing the additive genomic values $\boldsymbol{u}_G$ into the matrix of SNP genotypes $M$ and the vector of SNP effects $\boldsymbol{\beta}$:
-
-```{=tex}
-\begin{align}
-y = \boldsymbol{\text{1}}_n \mu + \boldsymbol{u}_S + \boldsymbol{\epsilon}_S
-\end{align}
-```
--   $\boldsymbol{u}_S := P M \boldsymbol{\beta} = \left[ \sum_{l=1}^L (M_{il} - M_{.l}) \beta_l \right]_{i \in \{1,\ldots,n\}}$
-
-    -   $\boldsymbol{u}_S$: $n$-vector of genomic values modeled as random
-
-    -   $P$: $n \times n$ column-wise, mean-centering matrix
-
-    -   $M$: $n \times p$ matrix of SNP genotypes, *considered fixed*
-
--   $\forall l, \beta_l \sim \mathcal{N}(0, \sigma_\beta^2)$
-
-    -   $\beta_l$: additive allelic effect of SNP $l$, *modeled as random*
-
-    -   $\sigma_\beta^2$: variance of the allelic effects
-
--   $\boldsymbol{\epsilon}_S \sim \mathcal{N}(\boldsymbol{0}, \sigma_S^2 \, \text{Id})$.
-
-Following [Schreck et al (2019)](https://academic.oup.com/genetics/article/213/2/379/5930631), for GBLUP and SNPBLUP to be equivalent, $\boldsymbol{u}_S$ and $\boldsymbol{u}_G$ should be equal in distribution:
-
--   $M$ needs to be column-wise mean-centered (that is, left-multiplied by $P$), so that $\bar{\boldsymbol{u}}_G = 0$;
-
--   SNP genotypes need to be modeled as fixed and allelic effects as random, so that $Cov(\boldsymbol{u}_S) := Cov(P M \boldsymbol{\beta}) = \sigma_{\beta}^2 P M M^T P = \sigma_{\beta}^2 \times c \; GRM_{VR1}$ and thus $\sigma_{u,G}^2 := c \, \sigma_{\beta}^2$.
-
-#### Genetic vs. genomic variance
-
-TODO: explain what $\sigma_u^2$ is, as trace of cov(ui,uj)
-
 #### Trait 1 with GBLUP
 
 ##### All generations
@@ -1079,22 +1147,34 @@ TODO: explain what $\sigma_u^2$ is, as trace of cov(ui,uj)
 fitG1 <- vcLMM(data=pedDat, inds=as.character(pedDat$ind_id),
                colY="pheno1", colZ="ind_id",
                K=GRM_VR1, #as.matrix(Matrix::nearPD(GRM_VR1)$mat),
-               method="REML", pkg="rrBLUP")
-attr(fitG1, "Vu")
-attr(fitG1, "Ve")
-attr(fitG1, "Vu") / (attr(fitG1, "Vu") + attr(fitG1, "Ve"))
+               pkg="rrBLUP")
+
+c("Vu_hat"=attr(fitG1, "Vu"),
+  "Ve_hat"=attr(fitG1, "Ve"),
+  "h2_hat"=attr(fitG1, "Vu") / (attr(fitG1, "Vu") + attr(fitG1, "Ve")))
+c("true_Vu"=truth$trait1$varBV_all)
+attr(fitG1, "Vu") - truth$trait1$varBV_all
+100 * (attr(fitG1, "Vu") - truth$trait1$varBV_all) / truth$trait1$varBV_all
+
 cor(fitG1$BLUP_u, fitG1$bv1)
+
 fitG1$generation <- factor(as.character(fitG1$generation),
                            levels=as.character(sort(unique(fitG1$generation))),
                            ordered=TRUE)
+(mu_hat <- attr(fitG1, "BLUE_beta"))
 ggplot(fitG1) +
-  aes(x=BLUP_u, y=bv1, color=generation) +
+  aes(x=BLUP_u, y=bv1 - mu_hat, color=generation) +
   geom_abline(slope=1, intercept=0, linetype="dotted") +
   geom_point() +
   labs(title="Trait 1; GBLUP with GRM_VR1; all generations",
        subtitle=simulDir,
        color="Generation") +
   theme_bw()
+
+## Compare estimates of genetic variances using the genetic variance components
+## obtained with the pedigree relationships vs with Van Raden's 1st estimator:
+D_VR1 * attr(fitG1, "Vu")
+D_A * attr(fitA1, "Vu")
 ```
 
 #### Trait 1 with SNPBLUP
@@ -1104,87 +1184,168 @@ ggplot(fitG1) +
 ```{r, fig.width=10}
 fitS1 <- vcLMM(data=pedDat, inds=as.character(pedDat$ind_id),
                colY="pheno1", colZ="ind_id",
-               Z=Z_VR1,
-               method="REML", pkg="rrBLUP")
-attr(fitS1, "Vu")
-attr(fitS1, "Ve")
+               Z=Z_VR1, pkg="rrBLUP")
+
+c("Vu_hat"=attr(fitS1, "Vu"),
+  "Ve_hat"=attr(fitS1, "Ve"))
+c("true_Vbeta"=truth$trait1$varBeta)
+attr(fitS1, "Vu") - truth$trait1$varBeta
+100 * (attr(fitS1, "Vu") - truth$trait1$varBeta) / truth$trait1$varBeta
 
 cor(snpInfos$beta_trait_1, attr(fitS1, "BLUP_u")[snpInfos$snp_id])
 plot(snpInfos$beta_trait_1, attr(fitS1, "BLUP_u"), asp=1)
+abline(a=0, b=1, lty=2)
 
 cor(fitS1$Z_BLUP_u, fitS1$bv1)
+
 fitS1$generation <- factor(as.character(fitS1$generation),
                            levels=as.character(sort(unique(fitS1$generation))),
                            ordered=TRUE)
+(mu_hat <- attr(fitS1, "BLUE_beta"))
 ggplot(fitS1) +
-  aes(x=Z_BLUP_u, y=bv1, color=generation) +
+  aes(x=Z_BLUP_u, y=bv1 - mu_hat, color=generation) +
   geom_abline(slope=1, intercept=0, linetype="dotted") +
   geom_point() +
   labs(title="Trait 1; SNPBLUP with Z_VR1; all generations",
        subtitle=simulDir,
        color="Generation") +
   theme_bw()
+
+## Compare the genetic variances between GBLUP (with Van Raden's 1st estimator)
+## and SNPBLUP:
+c_VR1 * attr(fitS1, "Vu")
+attr(fitG1, "Vu")
 ```
 
-### Best predictor of the additive genetic variance
+#### Trait 2 with GBLUP
 
-Schreck N, Piepho H-P, Schlather M. 2019. Best Prediction of the Additive Genomic Variance in Random-Effects Models. Genetics. 213(2):379--394. doi:10.1534/genetics.119.302324.
+Left as an exercise.
 
-#### Trait 1
+#### Trait 2 with SNPBLUP
+
+Left as an exercise.
+
+### With markers, handling LD
+
+#### Trait 1 with GBLUP and GRM_LDAK
+
+##### All generations
+
+```{r}
+fitL1 <- vcLMM(data=pedDat, inds=as.character(pedDat$ind_id),
+               colY="pheno1", colZ="ind_id",
+               K=GRM_ldak, #as.matrix(Matrix::nearPD(GRM_LDAK)$mat),
+               pkg="rrBLUP")
+
+c("Vu_hat"=attr(fitL1, "Vu"),
+  "Ve_hat"=attr(fitL1, "Ve"),
+  "h2_hat"=attr(fitL1, "Vu") / (attr(fitG1, "Vu") + attr(fitG1, "Ve")))
+c("true_Vu"=truth$trait1$varBV_all)
+attr(fitL1, "Vu") - truth$trait1$varBV_all
+100 * (attr(fitL1, "Vu") - truth$trait1$varBV_all) / truth$trait1$varBV_all
+
+cor(fitL1$BLUP_u, fitL1$bv1)
+```
+
+#### Trait 2
+
+Left as an exercise.
+
+#### Trait 1 with Schreck's et al best predictor
 
 ##### All generations
 
 ```{r}
 fitBP1 <- vcLMM(data=pedDat, inds=as.character(pedDat$ind_id),
-                Z=genos, colY="pheno1", colZ="ind_id",
-                method="REML", pkg="sommer")
+                Z=genos, colY="pheno1", colZ="ind_id", pkg="sommer")
 attr(fitBP1, "var_g")
 attr(fitBP1, "var_e")
 attr(fitBP1, "out_V")
 attr(fitBP1, "out_W")
 ```
 
-TODO
+#### Trait 2
+
+Left as an exercise.
 
 ## Predict the breeding values of non-phenotyped individuals
 
 Let us consider that the available phenotypic data are those of generations 0 to 9, and that only the genotyping data are available for generation 10. A vc-LMM can be trained on the first dataset (generations 0 to 9), and used to predict the breeding values of individuals from generation 10.
 
+```{r}
+length(inds_trn <- inds_notlast)
+length(inds_tst <- inds_last)
+```
+
 ### Using the estimated SNP effects
 
-```{r}
-fit_notlast <- vcLMM(data=pedDat, inds=as.character(inds_notlast),
-                     colY="pheno1", colZ="ind_id",
-                     Z=Z_VR1,
-                     method="REML", pkg="rrBLUP")
+#### Trait 1
 
-dim(genos_last <- genos[as.character(inds_last),])
-pred_BV1_last <- (genos_last %*% attr(fit_notlast, "BLUP_u"))[,1]
-cor(pred_BV1_last, setNames(pedDat$bv1, pedDat$ind_id)[names(pred_BV1_last)])
-plot(pred_BV1_last, setNames(pedDat$bv1, pedDat$ind_id)[names(pred_BV1_last)],
+```{r}
+dim(genos_trn <- genos[inds_trn,])
+AFs_trn <- colMeans(genos_trn) / 2
+tmp <- matrix(rep(1, nrow(genos_trn))) %*% (2 * AFs_trn)
+Z_trn <- genos_trn - tmp
+fit_trn <- vcLMM(data=pedDat, inds=as.character(inds_trn),
+                 colY="pheno1", colZ="ind_id",
+                 Z=Z_trn, pkg="rrBLUP")
+
+dim(genos_tst <- genos[as.character(inds_tst),])
+pred_BV1_SNPs <- (genos_tst %*% attr(fit_trn, "BLUP_u"))[,1]
+cor(pred_BV1_SNPs, setNames(pedDat$bv1, pedDat$ind_id)[names(pred_BV1_SNPs)])
+plot(pred_BV1_SNPs, setNames(pedDat$bv1, pedDat$ind_id)[names(pred_BV1_SNPs)],
+     main="Prediction accuracy with SNP effects",
      xlab="predicted BV1 (last generation)",
      ylab="true BV1 (last generation)")
 ```
 
+#### Trait 2
+
+Left as an exercise.
+
 ### Using the genetic relationships
 
-TODO
+#### Trait 1
 
 ```{r}
+length(y_trn <- setNames(pedDat$pheno1, pedDat$ind_id)[inds_trn])
+
 ## With GRM_IBD
+## TODO
 
 ## With A
+dim(G_trn_tst <- A[inds_trn, inds_tst])
+dim(G_trn <- A[inds_trn, inds_trn])
+lambda_hat <- attr(fitA1, "Ve") / attr(fitA1, "Vu")
+length(pred_BV1_A <- (t(G_trn_tst) %*% solve(G_trn + lambda_hat * diag(length(inds_trn))) %*% y_trn)[,1])
+cor(pred_BV1_A, setNames(pedDat$bv1, pedDat$ind_id)[names(pred_BV1_A)])
+plot(pred_BV1_A, setNames(pedDat$bv1, pedDat$ind_id)[names(pred_BV1_A)],
+     main="Prediction accuracy with A",
+     xlab="predicted BV1 (last generation)",
+     ylab="true BV1 (last generation)")
 
 ## With GRM_VR1
+dim(G_trn_tst <- GRM_VR1[inds_trn, inds_tst])
+dim(G_trn <- GRM_VR1[inds_trn, inds_trn])
+lambda_hat <- attr(fitG1, "Ve") / attr(fitG1, "Vu")
+length(pred_BV1_VR1 <- (t(G_trn_tst) %*% solve(G_trn + lambda_hat * diag(length(inds_trn))) %*% y_trn)[,1])
+cor(pred_BV1_VR1, setNames(pedDat$bv1, pedDat$ind_id)[names(pred_BV1_VR1)])
+plot(pred_BV1_VR1, setNames(pedDat$bv1, pedDat$ind_id)[names(pred_BV1_VR1)],
+     main="Prediction accuracy with GRM_VR1",
+     xlab="predicted BV1 (last generation)",
+     ylab="true BV1 (last generation)")
 
 ## With GRM_LDAK
-
+## TODO
 ```
 
+#### Trait 2
+
+Left as an exercise.
 
 <!-- ==================================================================== -->
 
-# Analysis for both traits jointly
+# Multivariate statistical analysis for both traits jointly
 
 Quite slow.
 
