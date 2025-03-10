@@ -553,6 +553,13 @@ image(as(GRM_VR1_gen0, "Matrix"), main=paste0("GRM_VR1 (generation 0)\n", simulD
 hist(diag(GRM_VR1_gen0), main=paste0("diag of GRM_VR1 (generation 0)\n", simulDir))
 hist(GRM_VR1_gen0[upper.tri(GRM_VR1_gen0)], main=paste0("offdiag of GRM_VR1 ( generation 0)\n", simulDir))
 ```
+##### Changes in allele frequencies
+
+```{r}
+AFs_last <- colMeans(genos[inds_last,]) / 2
+plot(AFs_gen0, AFs_last)
+plot(AFs_last - AFs_gen0)
+```
 
 #### Second estimator (VR2)
 
