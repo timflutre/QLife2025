@@ -829,6 +829,7 @@ gemma.hyp = read.table("simulations/gwas_simu5/gemma/output/result.hyp.txt", hea
 ## The heritability estimate can be found under pve
 hist(gemma.hyp$pve,n=100, main="Posterior distribution of PVE (Heritability)",xlim=c(0,1))
 abline(v=0.5,col=2)
+
 ```
 The PVE parameter estimates the Proporition of Variance Explained by genetic effects (QTLs + polygen). 
 Here we simulated 0.5. We are plotting the *posterior distribution* of this parameter, which give us and idea of our uncertainty in its value.
@@ -888,9 +889,11 @@ summary(gaston.ash)
 
 lm.res.5$beta_gaston_ash <- gaston.ash$result$PosteriorMean
 lm.res.5$qval_gaston_ash <- gaston.ash$result$qvalue
+lm.res.5$lfdr <- gaston.ash$result$lfdr
+lm.res.5$lfsr <- gaston.ash$result$lfsr
 th.ash <- max(lm.res.5$pval[lm.res.5$qval_gaston_ash < 0.05])
 
 ggplot(lm.res.5) +
-  geom_point(aes(x = beta_gaston, beta_gaston_ash)) +
+  geom_point(aes(x = beta_gaston, beta_gaston_ash, colour=lfsr)) +
   scale_colour_distiller()
 ```
