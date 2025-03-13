@@ -553,6 +553,7 @@ image(as(GRM_VR1_gen0, "Matrix"), main=paste0("GRM_VR1 (generation 0)\n", simulD
 hist(diag(GRM_VR1_gen0), main=paste0("diag of GRM_VR1 (generation 0)\n", simulDir))
 hist(GRM_VR1_gen0[upper.tri(GRM_VR1_gen0)], main=paste0("offdiag of GRM_VR1 ( generation 0)\n", simulDir))
 ```
+
 ##### Changes in allele frequencies
 
 ```{r}
@@ -579,14 +580,9 @@ See the NOIA estimator described in [Vitezica et al (2017)](http://www.genetics.
 
 As summarized in [Speed et al (2022)](https://onlinelibrary.wiley.com/doi/10.1002/bies.202100170), when SNP genotypes are in linkage disequilibrium, the effect of a causal gene (QTL) ends up being allocated among its tagging SNPs, i.e., non-causal SNPs in LD with the QTL. Speed, Balding and co-workers hence proposed to estimate genomic relatedness with a weight for each SNP, as implemented in the [LDAK software](http://ldak.org). The sum of weights for a set of SNPs decreases as the LD amongst the SNPs increases, so that SNPs in low-LD regions contribute more to SNP heritability than those in high-LD regions.
 
-They proposed the following vc-LMM with standardized phenotypes: $\boldsymbol{y} = X \boldsymbol{\beta} + \boldsymbol{\epsilon}$ with $\beta_l \sim \mathcal{N}(0, \sigma_l^2)$ and $X_{il} := \frac{M_{il} - 2 f_l}{\sqrt{2 f_l (1 - f_l)}}$ (as in Van Raden's 2nd estimator).
-That is, each SNP has its own specific variance.
-Let $h^2_{SNP}$ be the heritability explained by all the SNPs: $\hat{h}^2_{SNP} = \sum_l \hat{\sigma}_l^2$ when LD is ignored.
-To account for LD, they added SNP-specific weights, so that $\sigma_j^2 = q_l \, h^2_{SNP}$ where $q_l \propto w_l [f_l (1 - f_l)]^{1 + \alpha}$ and $\sum_l q_l = 1$.
+They proposed the following vc-LMM with standardized phenotypes: $\boldsymbol{y} = X \boldsymbol{\beta} + \boldsymbol{\epsilon}$ with $\beta_l \sim \mathcal{N}(0, \sigma_l^2)$ and $X_{il} := \frac{M_{il} - 2 f_l}{\sqrt{2 f_l (1 - f_l)}}$ (as in Van Raden's 2nd estimator). That is, each SNP has its own specific variance. Let $h^2_{SNP}$ be the heritability explained by all the SNPs: $\hat{h}^2_{SNP} = \sum_l \hat{\sigma}_l^2$ when LD is ignored. To account for LD, they added SNP-specific weights, so that $\sigma_l^2 = q_l \, h^2_{SNP}$ where $q_l \propto w_l [f_l (1 - f_l)]^{1 + \alpha}$ and $\sum_l q_l = 1$.
 
-Assuming that the unscaled effect-size variance is invariant to the allele frequency ("neutrality") corresponds to $w_l = 1 / L$ and $\alpha = 0$.
-Assuming that the unscaled effect-size variance increases as the minor allele frequency decreases ("purifying selection") corresponds to $w_l = 1/L$ and $\alpha = -1$.
-The weights $w_l$ can be computed by the LDAK software, with $\alpha = -0.25$ by default.
+Assuming that the unscaled effect-size variance is invariant to the allele frequency ("neutrality") corresponds to $w_l = 1 / L$ and $\alpha = 0$. Assuming that the unscaled effect-size variance increases as the minor allele frequency decreases ("purifying selection") corresponds to $w_l = 1/L$ and $\alpha = -1$. The weights $w_l$ can be computed by the LDAK software, with $\alpha = -0.25$ by default.
 
 #### Run
 
@@ -919,7 +915,7 @@ As described above, SNPBLUP models the SNP genotypes as fixed (FM) and the SNP e
 When SNP genotypes are modeled as random (RM) and SNP effects as fixed (FE), however, Schreck et al (2019) showed that the theoretical additive genomic variance is the genomic equivalent of the classical additive genetic variance, and that it takes LD into account: $\sigma_{a,M-FE}^2 := var(M \boldsymbol{\beta} | \boldsymbol{\beta})$ so that: \begin{align*} \sigma_{a,RM-FE}^2 = \boldsymbol{\beta}^T \, \Sigma_M \, \boldsymbol{\beta}
 \end{align*} where $\Sigma_M$ is the variance-covariance matrix of the SNP genotypes.
 
-In practice, $\Sigma_M$ is replaced by its estimate $\hat{\Sigma}_M$, and the theoretical additive genomic variance under the RM-FE model, $\sigma_{RM-FE}^2$, ends up being equal to the (unbiased) *sample* variance of the genomic values, $s_{a,M}^2$. Indeed: $s_{a,M}^2 := \frac{1}{n-1} \sum_i (u_{S,i} - \bar{u}_S)$. Given that $\bar{u}_S = 0$ and that $P$ is symmetric and idempotent: $s_{a,M}^2 = \frac{1}{n-1} \boldsymbol{u}_S^T \, \boldsymbol{u}_S = \frac{1}{n-1} \boldsymbol{\beta}^T \, M^T \, P \, M \, \boldsymbol{\beta} = \boldsymbol{\beta}^T \, \hat{\Sigma}_M \, \boldsymbol{\beta}$.
+In practice, $\Sigma_M$ is replaced by its estimate $\hat{\Sigma}_M$, and the theoretical additive genomic variance under the RM-FE model, $\sigma_{RM-FE}^2$, ends up being equal to the (unbiased) *sample* variance of the genomic values, $s_{a,M}^2$. Indeed: $s_{a,M}^2 := \frac{1}{n-1} \sum_i (u_{S,i} - \bar{u}_S)^2$. Given that $\bar{u}_S = 0$ and that $P$ is symmetric and idempotent: $s_{a,M}^2 = \frac{1}{n-1} \boldsymbol{u}_S^T \, \boldsymbol{u}_S = \frac{1}{n-1} \boldsymbol{\beta}^T \, M^T \, P \, M \, \boldsymbol{\beta} = \boldsymbol{\beta}^T \, \hat{\Sigma}_M \, \boldsymbol{\beta}$.
 
 In this RM-FE model, as $\boldsymbol{\beta}$ is random, so is $s_{a,M}^2$. Schreck et al hence proposed a best predictor for it, as the expectation of $s_{a,M}^2$ conditional on the phenotypic data. They further showed that it can be partitioned into the unconditional expectation of the additive genomic variance (ignoring LD) and the LD contribution conditional on the phenotypic data, noted $L(\boldsymbol{y})$: $BP(s_{a,M}^2) = \sigma_\beta^2 \, tr(\hat{\Sigma}_M) + L(\boldsymbol{y})$. In practice, the empirical best predictor is computed using the estimate of $\sigma_\beta^2$ and the eBLUP of $\boldsymbol{\beta}$ obtained by fitting the SNPBLUP model (or its equivalent GBLUP model) with ReML. Any difference between the unconditional and conditional expectations is due to the LD contribution, whose sign and magnitude depends on the dataset.
 
@@ -1454,7 +1450,6 @@ summary(fitG12)
 ## With markers, handling LD
 
 TODO
-
 
 # Appendix
 
